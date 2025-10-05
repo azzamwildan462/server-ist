@@ -887,26 +887,38 @@ ros.on("connection", function () {
         updateBatteryAnimation(soc, false); // Set to true if you want charging animation
 
         // Change color based on SOC value
-        // if (soc < 30) {
-        //     if (alarm_30.paused) {
-        //         alarm_30.play();
-        //     }
-        // } else if (soc < 40) {
-        //     if (alarm_30.paused) {
-        //         alarm_30.play();
-        //     }
-        // } else {
-        //     if (test_audio_play == 0) {
-        //         if (!alarm_30.paused) {
-        //             alarm_30.pause();
-        //             alarm_30.currentTime = 0;
-        //         }
-        //         if (!alarm_40.paused) {
-        //             alarm_40.pause();
-        //             alarm_40.currentTime = 0;
-        //         }
-        //     }
-        // }
+        if (soc < 5) {
+            if (test_audio_play == 0) {
+                if (!alarm_30.paused) {
+                    alarm_30.pause();
+                    alarm_30.currentTime = 0;
+                }
+                if (!alarm_40.paused) {
+                    alarm_40.pause();
+                    alarm_40.currentTime = 0;
+                }
+            }
+        }
+        else if (soc < 30) {
+            if (alarm_30.paused) {
+                alarm_30.play();
+            }
+        } else if (soc < 40) {
+            if (alarm_30.paused) {
+                alarm_30.play();
+            }
+        } else {
+            if (test_audio_play == 0) {
+                if (!alarm_30.paused) {
+                    alarm_30.pause();
+                    alarm_30.currentTime = 0;
+                }
+                if (!alarm_40.paused) {
+                    alarm_40.pause();
+                    alarm_40.currentTime = 0;
+                }
+            }
+        }
     });
 
     wp_subscriber = new ROSLIB.Topic({
@@ -985,11 +997,6 @@ ros.on("connection", function () {
         if ((message.data & STATUS_TOWING_ACTIVE_AUTO) == 0) {
             newStatus = "Towing Mode Manual";
             status_emergency.innerHTML = newStatus;
-            if (!alarm_30.paused) {
-                alarm_30.pause();
-                alarm_30.currentTime = 0;
-            }
-
             if (!alarm.paused) {
                 alarm.pause();
                 alarm.currentTime = 0;
@@ -1044,10 +1051,6 @@ ros.on("connection", function () {
                 if (!alarm.paused) {
                     alarm.pause();
                     alarm.currentTime = 0;
-                }
-                if (!alarm_30.paused) {
-                    alarm_30.pause();
-                    alarm_30.currentTime = 0;
                 }
             }
         }

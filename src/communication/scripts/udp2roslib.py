@@ -94,9 +94,10 @@ class UDP2ROSLIB(Node):
         self.pub_waypoint = self.create_publisher(PointCloud, '/udp/waypoints', 1)
 
         self.last_time_waypoint_published_ms = 0
+        self.last_time_update_lag = 0
 
         # Example of a timer that calls a callback every second
-        self.timer = self.create_timer(0.5, self.timer_callback)
+        self.timer = self.create_timer(0.1, self.timer_callback)
     
     def yaw_to_quat(self, yaw_rad: float):
         """Convert yaw (radians) to quaternion (qx, qy, qz, qw)."""
@@ -175,9 +176,9 @@ class UDP2ROSLIB(Node):
                         terminal=unpacked_data[5],
                         warning=unpacked_data[6],
                         lap=unpacked_data[7],
-                        ts_ms=int(time.time_ns() // 1_000_000),
+                        ts_ms=time_now_ms,
                     )
-                    logger.info(f"Received data from {addr}: {asdict(self.t2)}")
+                    logger.info(f"Rcvd {addr}: {asdict(self.t2)}")
         except BlockingIOError:
             pass
 
@@ -193,7 +194,7 @@ class UDP2ROSLIB(Node):
                 self.t2.terminal,
                 self.t2.warning,
                 self.t2.lap,
-                int(time.time_ns() // 1_000_000),
+                time_now_ms,
             )
             self.sock_client_ofc.send(packed_data)
             logger.info(f"Sent data to {self.OFC_IP}:{self.OFC_PORT}: {asdict(self.t2)}")
@@ -231,13 +232,18 @@ class UDP2ROSLIB(Node):
         counter_lap_msg.data = self.t2.lap
         self.pub_t2_counter_lap.publish(counter_lap_msg)
 
-        t2_lag_ms_msg = Int16()
-        lag_ms_buffer = time_now_ms - self.t2.ts_ms
-        if lag_ms_buffer < 0 or lag_ms_buffer > 9999:
-            t2_lag_ms_msg.data = 9999
-        else:
-            t2_lag_ms_msg.data = lag_ms_buffer
-        self.pub_t2_lag_ms.publish(t2_lag_ms_msg)
+        if time_now_ms - self.last_time_update_lag > 1000:
+            self.last_time_update_lag = time_now_ms
+            t2_lag_ms_msg = Int16()
+            lag_ms_buffer = time_now_ms - self.t2.ts_ms
+            if lag_ms_buffer < 1000:
+                lag_ms_buffer = 30 # zzz
+
+            if lag_ms_buffer > 9999:
+                t2_lag_ms_msg.data = 9999
+            else:
+                t2_lag_ms_msg.data = lag_ms_buffer
+            self.pub_t2_lag_ms.publish(t2_lag_ms_msg)
 
         if time_now_ms - self.last_time_waypoint_published_ms > 1000:
             self.last_time_waypoint_published_ms = time_now_ms 
