@@ -69,6 +69,23 @@ def generate_launch_description():
         respawn=True,
     )
 
+    udp2roslib = Node(
+        package="communication",
+        executable="udp2roslib.py",
+        name="udp2roslib",
+        parameters=[{
+            "waypoint_file_path": os.path.join(path_config, "waypoint.csv"),
+            "MY_SERVER_IP": "0.0.0.0",
+            "MY_SERVER_PORT": 1254,
+            "T2_IP": "127.0.0.1",
+            "T2_PORT": 1255,
+            "OFC_IP": "127.0.0.1",
+            "OFC_PORT": 1256,
+        }],
+        output="screen",
+        respawn=True,
+    )
+
     # ========================== Hardware ================================
     keyboard_input = Node(
         package='hardware',
@@ -110,8 +127,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # rosapi_node,
-            # ui_server,
-            # rosbridge_server, 
+            ui_server,
+            rosbridge_server, 
 
             # telemetry,
 
@@ -120,5 +137,6 @@ def generate_launch_description():
             # keyboard_input,
 
             # wifi_control,
+            udp2roslib
         ]
     )

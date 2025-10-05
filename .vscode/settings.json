@@ -84,4 +84,5 @@
     "ros.distro": "noetic",
     "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "C_Cpp.errorSquiggles": "disabled",
+    "cmake.sourceDirectory": "/home/wildan/proyek/robotika/server-ist/src/vision",
 }
