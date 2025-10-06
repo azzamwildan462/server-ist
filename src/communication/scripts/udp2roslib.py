@@ -239,6 +239,10 @@ class UDP2ROSLIB(Node):
             if lag_ms_buffer < 1000:
                 lag_ms_buffer = 30 # zzz
 
+            # reset t2 telat 1 tick tapi gapapa 
+            if lag_ms_buffer > 30000:
+                self.t2.warning = 0
+                self.t2.soc = 0
             if lag_ms_buffer > 9999:
                 t2_lag_ms_msg.data = 9999
             else:
