@@ -77,10 +77,20 @@ def generate_launch_description():
             "waypoint_file_path": os.path.join(path_config, "waypoint.csv"),
             "MY_SERVER_IP": "0.0.0.0",
             "MY_SERVER_PORT": 1254,
-            "T2_IP": "127.0.0.1",
+            "T2_IP": "10.7.101.114",
             "T2_PORT": 1255,
             "OFC_IP": "127.0.0.1",
             "OFC_PORT": 1256,
+        }],
+        output="screen",
+        respawn=True,
+    )
+
+    camproxy = Node(
+        package="communication",
+        executable="camproxy.py",
+        name="camproxy",
+        parameters=[{
         }],
         output="screen",
         respawn=True,
@@ -137,6 +147,7 @@ def generate_launch_description():
             # keyboard_input,
 
             # wifi_control,
-            udp2roslib
+            udp2roslib,
+            camproxy
         ]
     )

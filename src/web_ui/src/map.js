@@ -672,6 +672,7 @@ let t2_terminal_terakhir_subscriber = null;
 let t2_soc = null;
 let t2_counter_lap = null;
 let t2_lag_ms = null;
+let t2_lap_sum = null;
 
 let is_lap_subscribed = false;
 
@@ -843,9 +844,9 @@ async function loadLapSum() {
     }
 }
 
-setInterval(() => {
-    loadLapSum();
-}, 2000)
+// setInterval(() => {
+//     loadLapSum();
+// }, 2000)
 
 // CAPEKKKKK, NEXT menambahkan terminal terakhir
 ros.on("connection", function () {
@@ -873,6 +874,19 @@ ros.on("connection", function () {
     t2_lag_ms.subscribe(function (message) {
         updateWiFiWidget(message.data)
     });
+
+    t2_lap_sum = new ROSLIB.Topic({
+        ros: ros,
+        name: '/udp/t2/lap_sum',
+        messageType: 'std_msgs/Int16'
+    });
+    t2_lap_sum.subscribe(function (message) {
+        const formattedLap = message.data.toString().padStart(2, '0');
+        counter_lap.innerHTML = formattedLap;
+        label_lap.style.color = 'white';
+        counter_lap.style.color = 'white'
+    });
+
 
     t2_soc = new ROSLIB.Topic({
         ros: ros,

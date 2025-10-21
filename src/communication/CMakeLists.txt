@@ -21,6 +21,7 @@ install(TARGETS
 
 install(PROGRAMS scripts/telemetry.py DESTINATION lib/${PROJECT_NAME})
 install(PROGRAMS scripts/udp2roslib.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/camproxy.py DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
