@@ -96,6 +96,16 @@ def generate_launch_description():
         respawn=True,
     )
 
+    rtsp2mjpeg = Node(
+        package="communication",
+        executable="rtsp2mjpeg.py",
+        name="rtsp2mjpeg",
+        parameters=[{
+        }],
+        output="screen",
+        respawn=True,
+    )
+
     # ========================== Hardware ================================
     keyboard_input = Node(
         package='hardware',
@@ -148,6 +158,7 @@ def generate_launch_description():
 
             # wifi_control,
             udp2roslib,
-            camproxy
+            # camproxy,
+            rtsp2mjpeg,
         ]
     )

@@ -810,10 +810,29 @@ setInterval(() => {
     }
 }, 3000);
 
-// Routine get snapshot 
+// // Routine get snapshot 
+// setInterval(() => {
+//     cam_main.src = 'http://' + ip_server + ':7890/cam1';
+// }, 5000);
+
+cam_main.src = 'http://' + ip_server + ':7890/cam1.mjpeg';
+let last_time_camera_normal = 0;
 setInterval(() => {
-    cam_main.src = 'http://' + ip_server + ':7890/cam1';
-}, 5000);
+    let time_now = Date.now();
+    let time_diff = time_now - last_time_camera_normal;
+    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
+    if (Math.floor(time_diff / 1000) > 10) {
+        console.log("Camera seems disconnected, refreshing...");
+        location.reload();
+    }
+
+}, 3000);
+
+cam_main.onload = function () {
+    last_time_camera_normal = Date.now();
+    console.log('Camera image loaded successfully.');
+};
+
 
 async function loadLapSum() {
     try {
@@ -961,7 +980,7 @@ ros.on("connection", function () {
         // Draw the waypoints
         const waypointsLine = new Konva.Line({
             points: waypoints,
-            stroke: 'blue',
+            stroke: 'red',
             strokeWidth: 15,
         });
         waypointsLayer.add(waypointsLine);
@@ -1074,9 +1093,9 @@ ros.on("connection", function () {
 
         const isImportantWarning = newStatus !== "Towing Normal";
 
-        if (newStatus !== oldStatus && isImportantWarning) {
-            logCurrentRobotState();
-        }
+        // if (newStatus !== oldStatus && isImportantWarning) {
+        //     logCurrentRobotState();
+        // }
     });
 
     // ===================================================
@@ -1186,10 +1205,10 @@ ros.on("connection", function () {
             terminal_terakhir.innerHTML = terminalStatus;
         }
 
-        if (terminalStatus && terminalStatus !== lastTerminalStatus) {
-            lastTerminalStatus = terminalStatus;
-            logCurrentRobotState();
-        }
+        // if (terminalStatus && terminalStatus !== lastTerminalStatus) {
+        //     lastTerminalStatus = terminalStatus;
+        //     logCurrentRobotState();
+        // }
     });
 });
 
