@@ -810,10 +810,38 @@ setInterval(() => {
     }
 }, 3000);
 
-// // Routine get snapshot 
-// setInterval(() => {
-//     cam_main.src = 'http://' + ip_server + ':7890/cam1';
-// }, 5000);
+
+function reconnectImg(elemOrId, baseUrl) {
+    const oldImg = typeof elemOrId === 'string' ? document.getElementById(elemOrId) : elemOrId;
+
+    // Buat IMG baru dari nol (tanpa koneksi/event lama)
+    const fresh = new Image();
+    fresh.width = oldImg.width;
+    fresh.height = oldImg.height;
+    fresh.alt = oldImg.alt || '';
+
+    // (Opsional) copy class/style
+    fresh.className = oldImg.className;
+    fresh.style.cssText = oldImg.style.cssText;
+
+    // Pasang handler sebelum set src
+    fresh.onload = () => {
+        // sukses → lepas dan buang img lama
+        oldImg.replaceWith(fresh);
+    };
+    fresh.onerror = () => {
+        // gagal → coba lagi dengan backoff kecil
+        setTimeout(() => reconnectImg(fresh, baseUrl), 1000);
+    };
+
+    // Putus koneksi lama sebersih mungkin
+    oldImg.src = '';
+    oldImg.removeAttribute('src');      // beberapa browser perlu ini
+
+    // Paksa URL unik (cache-buster)
+    const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'ts=' + Date.now();
+    fresh.src = url;
+}
 
 cam_main.src = 'http://' + ip_server + ':7890/cam1.mjpeg';
 let last_time_camera_normal = 0;
@@ -823,7 +851,7 @@ setInterval(() => {
     console.log("Camera time diff: ", Math.floor(time_diff / 1000));
     if (Math.floor(time_diff / 1000) > 10) {
         console.log("Camera seems disconnected, refreshing...");
-        location.reload();
+        reconnectImg(cam_main, 'http://' + ip_server + ':7890/cam1.mjpeg');
     }
 
 }, 3000);

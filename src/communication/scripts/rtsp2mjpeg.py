@@ -360,8 +360,17 @@ class Rtsp2MjpegNode(Node):
 
         def stream(idx: int):
             gen = hub.generator(idx, fps_limit=limit)
-            return Response(stream_with_context(gen),
+            resp = Response(stream_with_context(gen),
                             mimetype="multipart/x-mixed-replace; boundary=frame")
+            # Header anti-cache yang tegas
+            resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            # (opsional) dorong koneksi baru saat reset
+            resp.headers["Connection"] = "close"
+            return resp
+            # return Response(stream_with_context(gen),
+            #                 mimetype="multipart/x-mixed-replace; boundary=frame")
 
         @app.get("/cam1.mjpeg")
         def cam1(): return stream(0)
