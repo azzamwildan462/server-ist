@@ -88,12 +88,12 @@ class UDP2ROSLIB(Node):
 
         self.declare_parameter("MY_SERVER_IP", "0.0.0.0")
         self.declare_parameter("MY_SERVER_PORT", 1254)
-        self.declare_parameter("T2_IP", "10.20.30.40")
-        self.declare_parameter("T2_PORT", 1255)
-        self.declare_parameter("T1_IP", "10.20.30.245")
-        self.declare_parameter("T1_PORT", 1255)
-        self.declare_parameter("T3_IP", "10.20.30.242")
-        self.declare_parameter("T3_PORT", 1255)
+        self.declare_parameter("T2_IP", "192.168.18.22")
+        self.declare_parameter("T2_PORT", 1254)
+        self.declare_parameter("T1_IP", "192.168.18.56")
+        self.declare_parameter("T1_PORT", 1254)
+        self.declare_parameter("T3_IP", "192.168.18.23")
+        self.declare_parameter("T3_PORT", 1254)
         self.declare_parameter('waypoint_file_path', str(Path.home() / 'waypoints.csv'))
 
         self.MY_SERVER_IP = self.get_parameter("MY_SERVER_IP").get_parameter_value().string_value
@@ -476,11 +476,17 @@ class UDP2ROSLIB(Node):
         self.sock_client_t2.setblocking(False) 
         logger.info(f"UDP client initialized to send to {self.T2_IP}:{self.T2_PORT}")
 
-        self.sock_client_ofc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock_client_ofc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock_client_ofc.connect((self.T1_IP, self.T1_PORT))  
-        self.sock_client_ofc.setblocking(False) 
+        self.sock_client_t1 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock_client_t1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock_client_t1.connect((self.T1_IP, self.T1_PORT))  
+        self.sock_client_t1.setblocking(False) 
         logger.info(f"UDP client initialized to send to {self.T1_IP}:{self.T1_PORT}")
+
+        self.sock_client_t3 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock_client_t3.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock_client_t3.connect((self.T3_IP, self.T3_PORT))
+        self.sock_client_t3.setblocking(False)
+        logger.info(f"UDP client initialized to send to {self.T3_IP}:{self.T3_PORT}")
 
     def _wib_now(self) -> datetime:
         return datetime.now(tz=self.WIB_TZ)
@@ -603,6 +609,7 @@ class UDP2ROSLIB(Node):
                         lap=unpacked_data[7],
                         ts_ms=time_now_ms,
                     )
+                    logger.info(f"T2: {self.t2} SOC: {self.t2.soc} Pose: ({self.t2.pose_x}, {self.t2.pose_y}, {self.t2.pose_theta}) Terminal: {self.t2.terminal} Warning: {self.t2.warning} Lap: {self.t2.lap} Timestamp: {self.t2.ts_ms}")
                 elif addr[0] == self.T1_IP:
                     self.t1 = towing_t(
                         name=unpacked_data[0],
@@ -615,6 +622,7 @@ class UDP2ROSLIB(Node):
                         lap=unpacked_data[7],
                         ts_ms=time_now_ms,
                     )
+                    logger.info(f"T1: {self.t1} SOC: {self.t1.soc} Pose: ({self.t1.pose_x}, {self.t1.pose_y}, {self.t1.pose_theta}) Terminal: {self.t1.terminal} Warning: {self.t1.warning} Lap: {self.t1.lap} Timestamp: {self.t1.ts_ms}")
                 elif addr[0] == self.T3_IP:
                     self.t3 = towing_t(
                         name=unpacked_data[0],
@@ -627,12 +635,47 @@ class UDP2ROSLIB(Node):
                         lap=unpacked_data[7],
                         ts_ms=time_now_ms,
                     )
+                    logger.info(f"T3: {self.t3} SOC: {self.t3.soc} Pose: ({self.t3.pose_x}, {self.t3.pose_y}, {self.t3.pose_theta}) Terminal: {self.t3.terminal} Warning: {self.t3.warning} Lap: {self.t3.lap} Timestamp: {self.t3.ts_ms}")
         except BlockingIOError:
             pass
 
         t2_isImportantWarning = str(self.t2.warning) != "Towing Normal"
         t1_isImportantWarning = str(self.t1.warning) != "Towing Normal"
         t3_isImportantWarning = str(self.t3.warning) != "Towing Normal"
+
+        ####################################################
+        #                    Send UDP                      #
+        ####################################################
+        # Create buffer string for UDP sending
+        udp_buffer = struct.pack('f f f f f f f f f f f f',
+            float(self.t1.terminal),
+            float(self.t1.pose_x),
+            float(self.t1.pose_y),
+            float(self.t1.pose_theta),
+            float(self.t2.terminal),
+            float(self.t2.pose_x),
+            float(self.t2.pose_y),
+            float(self.t2.pose_theta),
+            float(self.t3.terminal),
+            float(self.t3.pose_x),
+            float(self.t3.pose_y),
+            float(self.t3.pose_theta)
+        )
+        try:
+            logger.info(f"Sending UDP to T1")
+            self.sock_client_t1.send(udp_buffer)
+        except Exception as e:
+            logger.error(f"Error sending UDP to T1: {e}")
+        try:
+            logger.info(f"Sending UDP to T2")
+            self.sock_client_t2.send(udp_buffer)
+        except Exception as e:
+            logger.error(f"Error sending UDP to T2: {e}")   
+        try:
+            logger.info(f"Sending UDP to T3")
+            self.sock_client_t3.send(udp_buffer)
+        except Exception as e:
+            logger.error(f"Error sending UDP to T3: {e}")
 
         ####################################################
         #              Logging and InfluxDB                #
@@ -655,19 +698,7 @@ class UDP2ROSLIB(Node):
         ####################################################
         #              Logging and InfluxDB                #
         ####################################################
-        logger.info(f"T2 Terminal {self.t2.terminal} {self.t2_last_terminal}, Warning {self.t2.warning} {self.t2_last_warning}")
-        if((self.t2.terminal != self.t2_last_terminal) or (t2_isImportantWarning and str(self.t2.warning) != self.t2_last_warning)):
-            # logger.info(f"name {self.t2.name}, soc {self.t2.soc}, pose_x {self.t2.pose_x}, pose_y {self.t2.pose_y}, pose_theta {self.t2.pose_theta}, terminal {self.t2.terminal}, warning {self.t2.warning}, lap {self.t2.lap}, ts_ms {self.t2.ts_ms}")
-            self.t2_last_terminal = self.t2.terminal
-            self.t2_last_warning = str(self.t2.warning)
-            self.log_data("2")
-            self.upload_influxdb(True, "2")
-        else:
-            if time_now_ms - self.t2_last_time_influx_db > 5000:
-                self.t2_last_time_influx_db = time_now_ms 
-                self.upload_influxdb(False, "2")        
-
-        logger.info(f"T1 Terminal {self.t1.terminal} {self.t1_last_terminal}, Warning {self.t1.warning} {self.t1_last_warning}")
+        # logger.info(f"T1 Terminal {self.t1.terminal} {self.t1_last_terminal}, Warning {self.t1.warning} {self.t1_last_warning}")
         if((self.t1.terminal != self.t1_last_terminal) or (t1_isImportantWarning and str(self.t1.warning) != self.t1_last_warning)):
             # logger.info(f"name {self.t1.name}, soc {self.t1.soc}, pose_x {self.t1.pose_x}, pose_y {self.t1.pose_y}, pose_theta {self.t1.pose_theta}, terminal {self.t1.terminal}, warning {self.t1.warning}, lap {self.t1.lap}, ts_ms {self.t1.ts_ms}")
             self.t1_last_terminal = self.t1.terminal
@@ -679,7 +710,19 @@ class UDP2ROSLIB(Node):
                 self.t1_last_time_influx_db = time_now_ms 
                 self.upload_influxdb(False, "1")    
 
-        logger.info(f"T3 Terminal {self.t3.terminal} {self.t3_last_terminal}, Warning {self.t3.warning} {self.t3_last_warning}")
+        # logger.info(f"T2 Terminal {self.t2.terminal} {self.t2_last_terminal}, Warning {self.t2.warning} {self.t2_last_warning}")
+        if((self.t2.terminal != self.t2_last_terminal) or (t2_isImportantWarning and str(self.t2.warning) != self.t2_last_warning)):
+            # logger.info(f"name {self.t2.name}, soc {self.t2.soc}, pose_x {self.t2.pose_x}, pose_y {self.t2.pose_y}, pose_theta {self.t2.pose_theta}, terminal {self.t2.terminal}, warning {self.t2.warning}, lap {self.t2.lap}, ts_ms {self.t2.ts_ms}")
+            self.t2_last_terminal = self.t2.terminal
+            self.t2_last_warning = str(self.t2.warning)
+            self.log_data("2")
+            self.upload_influxdb(True, "2")
+        else:
+            if time_now_ms - self.t2_last_time_influx_db > 5000:
+                self.t2_last_time_influx_db = time_now_ms 
+                self.upload_influxdb(False, "2")        
+
+        # logger.info(f"T3 Terminal {self.t3.terminal} {self.t3_last_terminal}, Warning {self.t3.warning} {self.t3_last_warning}")
         if((self.t3.terminal != self.t3_last_terminal) or (t3_isImportantWarning and str(self.t3.warning) != self.t3_last_warning)):
             # logger.info(f"name {self.t3.name}, soc {self.t3.soc}, pose_x {self.t3.pose_x}, pose_y {self.t3.pose_y}, pose_theta {self.t3.pose_theta}, terminal {self.t3.terminal}, warning {self.t3.warning}, lap {self.t3.lap}, ts_ms {self.t3.ts_ms}")
             self.t3_last_terminal = self.t3.terminal
