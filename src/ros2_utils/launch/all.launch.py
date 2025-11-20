@@ -79,8 +79,8 @@ def generate_launch_description():
             "MY_SERVER_PORT": 1254,
             "T2_IP": "10.7.101.114",
             "T2_PORT": 1255,
-            "OFC_IP": "127.0.0.1",
-            "OFC_PORT": 1256,
+            "T1_IP": "127.0.0.1",
+            "T1_PORT": 1256,
         }],
         output="screen",
         respawn=True,
@@ -101,6 +101,7 @@ def generate_launch_description():
         executable="rtsp2mjpeg.py",
         name="rtsp2mjpeg",
         parameters=[{
+            "http_port": 7892,
         }],
         output="screen",
         respawn=True,
@@ -147,8 +148,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # rosapi_node,
-            ui_server,
-            rosbridge_server, 
+            # ui_server,
+            # rosbridge_server, 
 
             # telemetry,
 
@@ -157,8 +158,8 @@ def generate_launch_description():
             # keyboard_input,
 
             # wifi_control,
-            udp2roslib,
             # camproxy,
+            # udp2roslib,
             rtsp2mjpeg,
         ]
     )

@@ -37,6 +37,7 @@ from pathlib import Path
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud, ChannelFloat32
 from geometry_msgs.msg import Point32
+from ros2_interface.msg import Towing
 
 @dataclass
 class towing_t:
@@ -75,7 +76,9 @@ class UDP2ROSLIB(Node):
         )
 
         # Setup configuration
-        self.ROBOT_NAME = "t2_testing"
+        self.ROBOT_NAME_T1 = "t1_testing" 
+        self.ROBOT_NAME_T2 = "t2_testing" 
+        self.ROBOT_NAME_T3 = "t3_testing" 
         self.INFLUXDB_BUCKET = "ist_salah"
         self.INFLUXDB_ORG = "ist"
         self.INFLUXDB_URL = "http://172.30.114.191:8086"
@@ -87,19 +90,25 @@ class UDP2ROSLIB(Node):
         self.declare_parameter("MY_SERVER_PORT", 1254)
         self.declare_parameter("T2_IP", "10.20.30.40")
         self.declare_parameter("T2_PORT", 1255)
-        self.declare_parameter("OFC_IP", "10.20.30.245")
-        self.declare_parameter("OFC_PORT", 1255)
+        self.declare_parameter("T1_IP", "10.20.30.245")
+        self.declare_parameter("T1_PORT", 1255)
+        self.declare_parameter("T3_IP", "10.20.30.242")
+        self.declare_parameter("T3_PORT", 1255)
         self.declare_parameter('waypoint_file_path', str(Path.home() / 'waypoints.csv'))
 
         self.MY_SERVER_IP = self.get_parameter("MY_SERVER_IP").get_parameter_value().string_value
         self.MY_SERVER_PORT = self.get_parameter("MY_SERVER_PORT").get_parameter_value().integer_value
         self.T2_IP = self.get_parameter("T2_IP").get_parameter_value().string_value
         self.T2_PORT = self.get_parameter("T2_PORT").get_parameter_value().integer_value
-        self.OFC_IP = self.get_parameter("OFC_IP").get_parameter_value().string_value
-        self.OFC_PORT = self.get_parameter("OFC_PORT").get_parameter_value().integer_value
+        self.T1_IP = self.get_parameter("T1_IP").get_parameter_value().string_value
+        self.T1_PORT = self.get_parameter("T1_PORT").get_parameter_value().integer_value
+        self.T3_IP = self.get_parameter("T3_IP").get_parameter_value().string_value
+        self.T3_PORT = self.get_parameter("T3_PORT").get_parameter_value().integer_value
         self.waypoint_file_path = Path(self.get_parameter('waypoint_file_path').get_parameter_value().string_value)
 
+        self.t1 = towing_t()
         self.t2 = towing_t()
+        self.t3 = towing_t()
 
         self.udp_init_as_server()
         self.udp_init_as_client()
@@ -110,18 +119,42 @@ class UDP2ROSLIB(Node):
 
         # Init variables
         self.error_counter = 0
-        self.last_lap = 0
-        self.prev_lap_program = 0
-        self.lap_global = 0
-        self.battery_global = 0
-        self.last_terminal = -2
-        self.last_warning = ""
 
-        self.now_is_day_or_night = 0 # 0=day, 1=night
-        self.prev_now_is_day_or_night = 0 # 0=day, 1=night
-        self.jumlah_lap_now = 0
+        self.t1_last_lap = 0
+        self.t1_prev_lap_program = 0
+        self.t1_lap_global = 0
+        self.t1_battery_global = 0
+        self.t1_last_terminal = -2
+        self.t1_last_warning = ""
+        self.t1_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t1_prev_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t1_jumlah_lap_now = 0
+        self.t1_has_get_last_log_data = False
+        self.t1_last_time_influx_db = 0
 
-        self.has_get_last_log_data = False
+        self.t2_last_lap = 0
+        self.t2_prev_lap_program = 0
+        self.t2_lap_global = 0
+        self.t2_battery_global = 0
+        self.t2_last_terminal = -2
+        self.t2_last_warning = ""
+        self.t2_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t2_prev_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t2_jumlah_lap_now = 0
+        self.t2_has_get_last_log_data = False
+        self.t2_last_time_influx_db = 0
+
+        self.t3_last_lap = 0
+        self.t3_prev_lap_program = 0
+        self.t3_lap_global = 0
+        self.t3_battery_global = 0
+        self.t3_last_terminal = -2
+        self.t3_last_warning = ""
+        self.t3_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t3_prev_now_is_day_or_night = 0 # 0=day, 1=night
+        self.t3_jumlah_lap_now = 0
+        self.t3_has_get_last_log_data = False
+        self.t3_last_time_influx_db = 0
 
         # Setup Flask app
         self.app = Flask(__name__)
@@ -147,19 +180,19 @@ class UDP2ROSLIB(Node):
         header.frame_id = "map"
         header.stamp = self.get_clock().now().to_msg()
 
-        self.pub_t2_odom = self.create_publisher(Odometry, '/udp/t2/pose_filtered', 1)
-        self.pub_t2_status_emergency = self.create_publisher(Int16, '/udp/t2/status_emergency', 1)
-        self.pub_t2_terminal_terakhir = self.create_publisher(Int16, '/udp/t2/terminal_terakhir', 1)
-        self.pub_t2_battery_soc = self.create_publisher(Int16, '/udp/t2/battery_soc', 1)
-        self.pub_t2_counter_lap = self.create_publisher(Int32, '/udp/t2/counter_lap', 1)
-        self.pub_t2_lag_ms = self.create_publisher(Int16, '/udp/t2/lag_ms', 1)
-        self.pub_t2_lap_sum = self.create_publisher(Int16, '/udp/t2/lap_sum', 1)
+        self.pub_t1 = self.create_publisher(Towing, '/udp/t1/packed', 1)
+        self.pub_t2 = self.create_publisher(Towing, '/udp/t2/packed', 1)
+        self.pub_t3 = self.create_publisher(Towing, '/udp/t3/packed', 1)
+
         self.pub_waypoint = self.create_publisher(PointCloud, '/udp/waypoints', 1)
 
         self.last_time_waypoint_published_ms = 0
         self.last_time_update_lag = 0
         self.last_time_calculate_shift = 0
-        self.last_time_influx_db = 0
+
+        self.msg_t1_packed = Towing()
+        self.msg_t2_packed = Towing()
+        self.msg_t3_packed = Towing()
 
         # Example of a timer that calls a callback every second
         self.timer = self.create_timer(0.1, self.timer_callback)
@@ -225,18 +258,6 @@ class UDP2ROSLIB(Node):
                 logger.error(f"Retry write failed: {e2}")
                 return False
             
-    def _set_lap(self):
-        try:
-            lap = int(request.args.get('lap', 0))
-            if lap <= 0:
-                return jsonify({'success': False, 'error': 'Lap must be non-negative'}), 400
-            self.jumlah_lap_now = lap
-            return jsonify({'success': True, 'message': f'Lap set to {lap}'})
-        except ValueError:
-            return jsonify({'success': False, 'error': 'Invalid lap value'}), 400
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-    
     def _build_influx_client_method(self):
         try:
             self._build_influx_client()
@@ -244,17 +265,107 @@ class UDP2ROSLIB(Node):
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
     
-    def _sync_lap(self):
-        self.jumlah_lap_now = self.lap_global;
-        return jsonify({'lap': self.jumlah_lap_now})
+    def t2_set_lap(self):
+        try:
+            lap = int(request.args.get('lap', 0))
+            if lap <= 0:
+                return jsonify({'success': False, 'error': 'Lap must be non-negative'}), 400
+            self.t2_jumlah_lap_now = lap
+            return jsonify({'success': True, 'message': f'Lap set to {lap}'})
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Invalid lap value'}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def t1_set_lap(self):
+        try:
+            lap = int(request.args.get('lap', 0))
+            if lap <= 0:
+                return jsonify({'success': False, 'error': 'Lap must be non-negative'}), 400
+            self.t1_jumlah_lap_now = lap
+            return jsonify({'success': True, 'message': f'Lap set to {lap}'})
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Invalid lap value'}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def t3_set_lap(self):
+        try:
+            lap = int(request.args.get('lap', 0))
+            if lap <= 0:
+                return jsonify({'success': False, 'error': 'Lap must be non-negative'}), 400
+            self.t3_jumlah_lap_now = lap
+            return jsonify({'success': True, 'message': f'Lap set to {lap}'})
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Invalid lap value'}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
     
-    def _get_log(self):
+    def t2_get_log(self):
         wib_dt = datetime.now()
         year = wib_dt.strftime('%Y')
         month = wib_dt.strftime('%m')  # Format bulan dalam angka (e.g., '09')
         date_string = wib_dt.strftime('%Y-%m-%d')
         home_dir = Path.home()
-        target_dir = home_dir / 'towing_logs' / year / month
+        target_dir = home_dir / '2' / 'towing_logs' / year / month
+        file_path = target_dir / f'towing_status_{date_string}.csv'
+
+        # Get url parameter 'lines', default 10
+        lines = int(request.args.get('lines', 10))
+
+        if not file_path.exists():
+            return jsonify({'success': False, 'error': 'Log file not found'}), 404
+        try:
+            self.log_file_mutex.acquire()
+            with open(file_path, 'r', encoding='utf-8') as csvfile:
+                all_lines = csvfile.readlines()
+                header = all_lines[0].strip().split(',')
+                data_lines = all_lines[1:]  # Exclude header
+                last_lines = data_lines[-lines:] if len(data_lines) >= lines else data_lines
+                result = [dict(zip(header, line.strip().split(','))) for line in last_lines]
+            self.log_file_mutex.release()
+            return jsonify({'success': True, 'data': result})
+        except Exception as e:
+            self.log_file_mutex.release()
+            logger.error(e)
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def t1_get_log(self):
+        wib_dt = datetime.now()
+        year = wib_dt.strftime('%Y')
+        month = wib_dt.strftime('%m')  # Format bulan dalam angka (e.g., '09')
+        date_string = wib_dt.strftime('%Y-%m-%d')
+        home_dir = Path.home()
+        target_dir = home_dir / '1' / 'towing_logs' / year / month
+        file_path = target_dir / f'towing_status_{date_string}.csv'
+
+        # Get url parameter 'lines', default 10
+        lines = int(request.args.get('lines', 10))
+
+        if not file_path.exists():
+            return jsonify({'success': False, 'error': 'Log file not found'}), 404
+        try:
+            self.log_file_mutex.acquire()
+            with open(file_path, 'r', encoding='utf-8') as csvfile:
+                all_lines = csvfile.readlines()
+                header = all_lines[0].strip().split(',')
+                data_lines = all_lines[1:]  # Exclude header
+                last_lines = data_lines[-lines:] if len(data_lines) >= lines else data_lines
+                result = [dict(zip(header, line.strip().split(','))) for line in last_lines]
+            self.log_file_mutex.release()
+            return jsonify({'success': True, 'data': result})
+        except Exception as e:
+            self.log_file_mutex.release()
+            logger.error(e)
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def t3_get_log(self):
+        wib_dt = datetime.now()
+        year = wib_dt.strftime('%Y')
+        month = wib_dt.strftime('%m')  # Format bulan dalam angka (e.g., '09')
+        date_string = wib_dt.strftime('%Y-%m-%d')
+        home_dir = Path.home()
+        target_dir = home_dir / '3' / 'towing_logs' / year / month
         file_path = target_dir / f'towing_status_{date_string}.csv'
 
         # Get url parameter 'lines', default 10
@@ -278,20 +389,20 @@ class UDP2ROSLIB(Node):
             return jsonify({'success': False, 'error': str(e)}), 500
 
 
-    def _get_battery_endpoint(self):
-        total = self.battery_global
-        return jsonify(total)
-    
-    def _shift_sum_endpoint(self):
-        # total = self.current_shift_sum()
-        total = self.current_shift_sum_azzam()
-
-        return jsonify(total)   # body: 123
+    def t2_shift_sum_endpoint(self):
+        total = self.t2_jumlah_lap_now
+        return jsonify(total)   
+    def t1_shift_sum_endpoint(self):
+        total = self.t1_jumlah_lap_now
+        return jsonify(total)   
+    def t3_shift_sum_endpoint(self):
+        total = self.t3_jumlah_lap_now
+        return jsonify(total)   
         
-    def write_sequently(self, fields, values):
+    def write_sequently(self, fields, values, robot_name="unknown_robot"):
         try:
             # Start with the base point (measurement name)
-            point = Point(self.ROBOT_NAME).tag("robot_name", self.ROBOT_NAME)
+            point = Point(robot_name).tag("robot_name", robot_name)
 
             # Add fields dynamically from the lists
             for field, value in zip(fields, values):
@@ -367,47 +478,102 @@ class UDP2ROSLIB(Node):
 
         self.sock_client_ofc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock_client_ofc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock_client_ofc.connect((self.OFC_IP, self.OFC_PORT))  
+        self.sock_client_ofc.connect((self.T1_IP, self.T1_PORT))  
         self.sock_client_ofc.setblocking(False) 
-        logger.info(f"UDP client initialized to send to {self.OFC_IP}:{self.OFC_PORT}")
+        logger.info(f"UDP client initialized to send to {self.T1_IP}:{self.T1_PORT}")
 
     def _wib_now(self) -> datetime:
         return datetime.now(tz=self.WIB_TZ)
-    
-    def current_shift_sum_azzam(self) -> int:
+
+    def t1_calculate_shift_sum_azzam(self) -> int:
         """If now is 06:00-17:59 → day; else night (anchored correctly across midnight)."""
         now = self._wib_now()
         if 6 <= now.hour < 18:
-            self.now_is_day_or_night = 0
+            self.t1_now_is_day_or_night = 0
         else:
-            self.now_is_day_or_night = 1
+            self.t1_now_is_day_or_night = 1
 
-        if self.now_is_day_or_night != self.prev_now_is_day_or_night:
-            # Shift berubah, reset prev_lap_program ke lap_global
-            # self.prev_lap_program = self.lap_global
-            self.jumlah_lap_now = 0
+        if self.t1_now_is_day_or_night != self.t1_prev_now_is_day_or_night:
+            self.t1_jumlah_lap_now = 0
         
-        d_lap_wtf = 0
-        if self.lap_global > 0:
-            d_lap_wtf = self.lap_global - self.prev_lap_program
+        t1_d_lap_wtf = 0
+        if self.t1_lap_global > 0:
+            t1_d_lap_wtf = self.t1_lap_global - self.t1_prev_lap_program
         
-        if d_lap_wtf < 0:
-            d_lap_wtf = self.lap_global
+        if t1_d_lap_wtf < 0:
+            t1_d_lap_wtf = self.t1_lap_global
         
-        self.jumlah_lap_now += d_lap_wtf
+        self.t1_jumlah_lap_now += t1_d_lap_wtf
 
-        self.prev_lap_program = self.lap_global
-        self.prev_now_is_day_or_night = self.now_is_day_or_night
+        self.t1_prev_lap_program = self.t1_lap_global
+        self.t1_prev_now_is_day_or_night = self.t1_now_is_day_or_night
 
-        return self.jumlah_lap_now
+        return self.t1_jumlah_lap_now
+    
+    def t2_calculate_shift_sum_azzam(self) -> int:
+        """If now is 06:00-17:59 → day; else night (anchored correctly across midnight)."""
+        now = self._wib_now()
+        if 6 <= now.hour < 18:
+            self.t2_now_is_day_or_night = 0
+        else:
+            self.t2_now_is_day_or_night = 1
+
+        if self.t2_now_is_day_or_night != self.t2_prev_now_is_day_or_night:
+            self.t2_jumlah_lap_now = 0
+        
+        t2_d_lap_wtf = 0
+        if self.t2_lap_global > 0:
+            t2_d_lap_wtf = self.t2_lap_global - self.t2_prev_lap_program
+        
+        if t2_d_lap_wtf < 0:
+            t2_d_lap_wtf = self.t2_lap_global
+        
+        self.t2_jumlah_lap_now += t2_d_lap_wtf
+
+        self.t2_prev_lap_program = self.t2_lap_global
+        self.t2_prev_now_is_day_or_night = self.t2_now_is_day_or_night
+
+        return self.t2_jumlah_lap_now
+
+    def t3_calculate_shift_sum_azzam(self) -> int:
+        """If now is 06:00-17:59 → day; else night (anchored correctly across midnight)."""
+        now = self._wib_now()
+        if 6 <= now.hour < 18:
+            self.t3_now_is_day_or_night = 0
+        else:
+            self.t3_now_is_day_or_night = 1
+
+        if self.t3_now_is_day_or_night != self.t3_prev_now_is_day_or_night:
+            self.t3_jumlah_lap_now = 0
+        
+        t3_d_lap_wtf = 0
+        if self.t3_lap_global > 0:
+            t3_d_lap_wtf = self.t3_lap_global - self.t3_prev_lap_program
+        
+        if t3_d_lap_wtf < 0:
+            t3_d_lap_wtf = self.t3_lap_global
+        
+        self.t3_jumlah_lap_now += t3_d_lap_wtf
+
+        self.t3_prev_lap_program = self.t3_lap_global
+        self.t3_prev_now_is_day_or_night = self.t3_now_is_day_or_night
+
+        return self.t3_jumlah_lap_now
 
     def register_routes(self):
-        self.app.add_url_rule("/lap-sum", view_func=self._shift_sum_endpoint, methods=["GET"])
-        self.app.add_url_rule("/battery", view_func=self._get_battery_endpoint, methods=["GET"])
-        self.app.add_url_rule("/log", view_func=self._get_log, methods=["GET"])
-        self.app.add_url_rule("/sync-lap", view_func=self._sync_lap, methods=["GET"])
         self.app.add_url_rule("/influx-restart", view_func=self._build_influx_client_method, methods=["GET"])
-        self.app.add_url_rule("/set-lap", view_func=self._set_lap, methods=["GET"])
+
+        self.app.add_url_rule("/t2/lap-sum", view_func=self.t2_shift_sum_endpoint, methods=["GET"])
+        self.app.add_url_rule("/t2/log", view_func=self.t2_get_log, methods=["GET"])
+        self.app.add_url_rule("/t2/set-lap", view_func=self.t2_set_lap, methods=["GET"])
+
+        self.app.add_url_rule("/t1/lap-sum", view_func=self.t1_shift_sum_endpoint, methods=["GET"])
+        self.app.add_url_rule("/t1/log", view_func=self.t1_get_log, methods=["GET"])
+        self.app.add_url_rule("/t1/set-lap", view_func=self.t1_set_lap, methods=["GET"])
+
+        self.app.add_url_rule("/t3/lap-sum", view_func=self.t3_shift_sum_endpoint, methods=["GET"])
+        self.app.add_url_rule("/t3/log", view_func=self.t3_get_log, methods=["GET"])
+        self.app.add_url_rule("/t3/set-lap", view_func=self.t3_set_lap, methods=["GET"])
 
     def thread_flask(self):
         self.app.run(host="0.0.0.0", port=int(3002))
@@ -437,94 +603,187 @@ class UDP2ROSLIB(Node):
                         lap=unpacked_data[7],
                         ts_ms=time_now_ms,
                     )
-                    # logger.info(f"Rcvd {addr}: {asdict(self.t2)}")
+                elif addr[0] == self.T1_IP:
+                    self.t1 = towing_t(
+                        name=unpacked_data[0],
+                        soc=unpacked_data[1],
+                        pose_x=unpacked_data[2],
+                        pose_y=unpacked_data[3],
+                        pose_theta=unpacked_data[4],
+                        terminal=unpacked_data[5],
+                        warning=unpacked_data[6],
+                        lap=unpacked_data[7],
+                        ts_ms=time_now_ms,
+                    )
+                elif addr[0] == self.T3_IP:
+                    self.t3 = towing_t(
+                        name=unpacked_data[0],
+                        soc=unpacked_data[1],
+                        pose_x=unpacked_data[2],
+                        pose_y=unpacked_data[3],
+                        pose_theta=unpacked_data[4],
+                        terminal=unpacked_data[5],
+                        warning=unpacked_data[6],
+                        lap=unpacked_data[7],
+                        ts_ms=time_now_ms,
+                    )
         except BlockingIOError:
             pass
 
-        isImportantWarning = str(self.t2.warning) != "Towing Normal"
+        t2_isImportantWarning = str(self.t2.warning) != "Towing Normal"
+        t1_isImportantWarning = str(self.t1.warning) != "Towing Normal"
+        t3_isImportantWarning = str(self.t3.warning) != "Towing Normal"
 
         ####################################################
         #              Logging and InfluxDB                #
         ####################################################
-        if not self.has_get_last_log_data:
-            last_lap = self.get_last_log_data()
-            self.prev_lap_program = last_lap
-            self.jumlah_lap_now = last_lap
+        if not self.t2_has_get_last_log_data:
+            last_lap = self.get_last_log_data("2")
+            self.t2_prev_lap_program = last_lap
+            self.t2_jumlah_lap_now = last_lap
+
+        if not self.t1_has_get_last_log_data:
+            last_lap = self.get_last_log_data("1")
+            self.t1_prev_lap_program = last_lap
+            self.t1_jumlah_lap_now = last_lap
+
+        if not self.t3_has_get_last_log_data:
+            last_lap = self.get_last_log_data("3")
+            self.t3_prev_lap_program = last_lap
+            self.t3_jumlah_lap_now = last_lap
 
         ####################################################
         #              Logging and InfluxDB                #
         ####################################################
-        logger.info(f"Terminal {self.t2.terminal} {self.last_terminal}, Warning {self.t2.warning} {self.last_warning}")
-        if((self.t2.terminal != self.last_terminal) or (isImportantWarning and str(self.t2.warning) != self.last_warning)):
+        logger.info(f"T2 Terminal {self.t2.terminal} {self.t2_last_terminal}, Warning {self.t2.warning} {self.t2_last_warning}")
+        if((self.t2.terminal != self.t2_last_terminal) or (t2_isImportantWarning and str(self.t2.warning) != self.t2_last_warning)):
             # logger.info(f"name {self.t2.name}, soc {self.t2.soc}, pose_x {self.t2.pose_x}, pose_y {self.t2.pose_y}, pose_theta {self.t2.pose_theta}, terminal {self.t2.terminal}, warning {self.t2.warning}, lap {self.t2.lap}, ts_ms {self.t2.ts_ms}")
-            self.last_terminal = self.t2.terminal
-            self.last_warning = str(self.t2.warning)
-            self.log_data()
-            self.upload_influxdb(True)
+            self.t2_last_terminal = self.t2.terminal
+            self.t2_last_warning = str(self.t2.warning)
+            self.log_data("2")
+            self.upload_influxdb(True, "2")
         else:
-            if time_now_ms - self.last_time_influx_db > 5000:
-                self.last_time_influx_db = time_now_ms 
-                self.upload_influxdb(False)        
+            if time_now_ms - self.t2_last_time_influx_db > 5000:
+                self.t2_last_time_influx_db = time_now_ms 
+                self.upload_influxdb(False, "2")        
+
+        logger.info(f"T1 Terminal {self.t1.terminal} {self.t1_last_terminal}, Warning {self.t1.warning} {self.t1_last_warning}")
+        if((self.t1.terminal != self.t1_last_terminal) or (t1_isImportantWarning and str(self.t1.warning) != self.t1_last_warning)):
+            # logger.info(f"name {self.t1.name}, soc {self.t1.soc}, pose_x {self.t1.pose_x}, pose_y {self.t1.pose_y}, pose_theta {self.t1.pose_theta}, terminal {self.t1.terminal}, warning {self.t1.warning}, lap {self.t1.lap}, ts_ms {self.t1.ts_ms}")
+            self.t1_last_terminal = self.t1.terminal
+            self.t1_last_warning = str(self.t1.warning)
+            self.log_data("1")
+            self.upload_influxdb(True, "1")
+        else:
+            if time_now_ms - self.t1_last_time_influx_db > 5000:
+                self.t1_last_time_influx_db = time_now_ms 
+                self.upload_influxdb(False, "1")    
+
+        logger.info(f"T3 Terminal {self.t3.terminal} {self.t3_last_terminal}, Warning {self.t3.warning} {self.t3_last_warning}")
+        if((self.t3.terminal != self.t3_last_terminal) or (t3_isImportantWarning and str(self.t3.warning) != self.t3_last_warning)):
+            # logger.info(f"name {self.t3.name}, soc {self.t3.soc}, pose_x {self.t3.pose_x}, pose_y {self.t3.pose_y}, pose_theta {self.t3.pose_theta}, terminal {self.t3.terminal}, warning {self.t3.warning}, lap {self.t3.lap}, ts_ms {self.t3.ts_ms}")
+            self.t3_last_terminal = self.t3.terminal
+            self.t3_last_warning = str(self.t3.warning)
+            self.log_data("3")
+            self.upload_influxdb(True, "3")
+        else:
+            if time_now_ms - self.t3_last_time_influx_db > 5000:
+                self.t3_last_time_influx_db = time_now_ms 
+                self.upload_influxdb(False, "3")    
         ####################################################
 
         # Publish to web ui 
-        qx, qy, qz, qw = self.yaw_to_quat(self.t2.pose_theta)
-        odom_msg = Odometry()
-        odom_msg.pose.pose.position.x = self.t2.pose_x
-        odom_msg.pose.pose.position.y = self.t2.pose_y
-        odom_msg.pose.pose.position.z = 0.0
-        odom_msg.pose.pose.orientation.x = qx
-        odom_msg.pose.pose.orientation.y = qy
-        odom_msg.pose.pose.orientation.z = qz
-        odom_msg.pose.pose.orientation.w = qw
-        self.pub_t2_odom.publish(odom_msg)
+        self.msg_t2_packed.pose_x.data = self.t2.pose_x
+        self.msg_t2_packed.pose_y.data = self.t2.pose_y
+        self.msg_t2_packed.pose_theta.data = self.t2.pose_theta
+        self.msg_t2_packed.status_emergency.data = self.t2.warning
+        self.msg_t2_packed.terminal_terakhir.data = self.t2.terminal
+        self.msg_t2_packed.battery_soc.data = self.t2.soc
+        self.msg_t2_packed.counter_lap.data = self.t2.lap
 
-        status_emergency_msg = Int16()
-        status_emergency_msg.data = self.t2.warning
-        self.pub_t2_status_emergency.publish(status_emergency_msg)
+        self.msg_t1_packed.pose_x.data = self.t1.pose_x
+        self.msg_t1_packed.pose_y.data = self.t1.pose_y
+        self.msg_t1_packed.pose_theta.data = self.t1.pose_theta
+        self.msg_t1_packed.status_emergency.data = self.t1.warning
+        self.msg_t1_packed.terminal_terakhir.data = self.t1.terminal
+        self.msg_t1_packed.battery_soc.data = self.t1.soc
+        self.msg_t1_packed.counter_lap.data = self.t1.lap
 
-        terminal_terakhir_msg = Int16()
-        terminal_terakhir_msg.data = self.t2.terminal
-        self.pub_t2_terminal_terakhir.publish(terminal_terakhir_msg)
+        self.msg_t3_packed.pose_x.data = self.t3.pose_x
+        self.msg_t3_packed.pose_y.data = self.t3.pose_y
+        self.msg_t3_packed.pose_theta.data = self.t3.pose_theta
+        self.msg_t3_packed.status_emergency.data = self.t3.warning
+        self.msg_t3_packed.terminal_terakhir.data = self.t3.terminal
+        self.msg_t3_packed.battery_soc.data = self.t3.soc
+        self.msg_t3_packed.counter_lap.data = self.t3.lap
 
-        battery_soc_msg = Int16()
-        battery_soc_msg.data = self.t2.soc
-        self.pub_t2_battery_soc.publish(battery_soc_msg)
-
-        counter_lap_msg = Int32()
-        counter_lap_msg.data = self.t2.lap
-        self.pub_t2_counter_lap.publish(counter_lap_msg)
-
+        # HItung lap per shift
         if time_now_ms - self.last_time_calculate_shift > 5000:
-            self.lap_global = self.t2.lap
-            self.current_shift_sum_azzam()
             self.last_time_calculate_shift = time_now_ms
-            shift_sum_msg = Int16()
-            shift_sum_msg.data = self.jumlah_lap_now
-            self.pub_t2_lap_sum.publish(shift_sum_msg)
 
+            self.t2_lap_global = self.t2.lap
+            self.t2_calculate_shift_sum_azzam()
+            self.msg_t2_packed.lap_sum.data = self.t2_jumlah_lap_now
+
+            self.t1_lap_global = self.t1.lap
+            self.t1_calculate_shift_sum_azzam()
+            self.msg_t1_packed.lap_sum.data = self.t1_jumlah_lap_now
+
+            self.t3_lap_global = self.t3.lap
+            self.t3_calculate_shift_sum_azzam()
+            self.msg_t3_packed.lap_sum.data = self.t3_jumlah_lap_now
+
+        # Hitung lag ms
         if time_now_ms - self.last_time_update_lag > 1000:
             self.last_time_update_lag = time_now_ms
-            t2_lag_ms_msg = Int16()
-            lag_ms_buffer = time_now_ms - self.t2.ts_ms
-            if lag_ms_buffer < 1000:
-                lag_ms_buffer = 30 # zzz
+            t2_lag_ms_buffer = time_now_ms - self.t2.ts_ms
+            if t2_lag_ms_buffer < 1000:
+                t2_lag_ms_buffer = 30 # zzz
+
+            t1_lag_ms_buffer = time_now_ms - self.t1.ts_ms
+            if t1_lag_ms_buffer < 1000:
+                t1_lag_ms_buffer = 30 # zzz
+
+            t3_lag_ms_buffer = time_now_ms - self.t3.ts_ms
+            if t3_lag_ms_buffer < 1000:
+                t3_lag_ms_buffer = 30 # zzz
 
             # reset t2 telat 1 tick tapi gapapa 
-            if lag_ms_buffer > 30000:
+            if t2_lag_ms_buffer > 30000:
                 self.t2.warning = 0
                 self.t2.soc = 0
-            if lag_ms_buffer > 9999:
-                t2_lag_ms_msg.data = 9999
+            if t1_lag_ms_buffer > 30000:
+                self.t1.warning = 0
+                self.t1.soc = 0
+            if t3_lag_ms_buffer > 30000:
+                self.t3.warning = 0
+                self.t3.soc = 0
+
+            if t2_lag_ms_buffer > 9999:
+                self.msg_t2_packed.lag_ms.data = 9999
             else:
-                t2_lag_ms_msg.data = lag_ms_buffer
-            self.pub_t2_lag_ms.publish(t2_lag_ms_msg)
+                self.msg_t2_packed.lag_ms.data = t2_lag_ms_buffer
+
+            if t1_lag_ms_buffer > 9999:
+                self.msg_t1_packed.lag_ms.data = 9999
+            else:
+                self.msg_t1_packed.lag_ms.data = t1_lag_ms_buffer
+
+            if t3_lag_ms_buffer > 9999:
+                self.msg_t3_packed.lag_ms.data = 9999
+            else:
+                self.msg_t3_packed.lag_ms.data = t3_lag_ms_buffer
+        
+        # Publish
+        self.pub_t2.publish(self.msg_t2_packed)
+        self.pub_t1.publish(self.msg_t2_packed)
+        self.pub_t3.publish(self.msg_t2_packed)
 
         if time_now_ms - self.last_time_waypoint_published_ms > 1000:
             self.last_time_waypoint_published_ms = time_now_ms 
             self.pub_waypoint.publish(self.wtf_pcl)
 
-    def get_last_log_data(self):
+    def get_last_log_data(self, towing_num_str):
         ####################################################
         #                   Data Logging                   #
         ####################################################
@@ -534,13 +793,19 @@ class UDP2ROSLIB(Node):
         time_part = self._wib_now().strftime('%H:%M:%S')
         # logger.info(f"Current Year-Month: {year}-{month}-{date_string}")
         home_dir = Path.home()
-        target_dir = home_dir / 'towing_logs' / year / month
+        target_dir = home_dir / towing_num_str / 'towing_logs' / year / month
         target_dir.mkdir(parents=True, exist_ok=True)       
         # logger.info(f"Target dir: {target_dir}")
         file_path = target_dir / f'towing_status_{date_string}.csv'
         file_exists = file_path.exists()
-        self.has_get_last_log_data = True
         open_yesterday_file = False
+
+        if towing_num_str == "1":
+            self.t1_has_get_last_log_data = True
+        elif towing_num_str == "3":
+            self.t3_has_get_last_log_data = True
+        elif towing_num_str == "2":
+            self.t2_has_get_last_log_data = True
 
         # time_part = "12:00:00"  # DEBUGGING
         # file_exists = False  # DEBUGGING
@@ -612,7 +877,7 @@ class UDP2ROSLIB(Node):
             logger.info(f"File {file_path} does not exist.")
             return 0
 
-    def log_data(self):
+    def log_data(self, towing_num_str="2"):
         ####################################################
         #                   Data Logging                   #
         ####################################################
@@ -622,7 +887,7 @@ class UDP2ROSLIB(Node):
         time_part = self._wib_now().strftime('%H:%M:%S')
         # logger.info(f"Current Year-Month: {year}-{month}-{date_string}")
         home_dir = Path.home()
-        target_dir = home_dir / 'towing_logs' / year / month
+        target_dir = home_dir / towing_num_str / 'towing_logs' / year / month
         target_dir.mkdir(parents=True, exist_ok=True)       
         # logger.info(f"Target dir: {target_dir}")
         file_path = target_dir / f'towing_status_{date_string}.csv'
@@ -640,60 +905,106 @@ class UDP2ROSLIB(Node):
             writer.writerow([time_part, self.t2.terminal, self.t2.warning, self.t2.soc, self.t2.lap, f'{self.t2.pose_x:.3f}', f'{self.t2.pose_y:.3f}', f'{self.t2.pose_theta:.3f}'])
         self.log_file_mutex.release()
     
-    def upload_influxdb(self, upload_all=False):
+    def upload_influxdb(self, upload_all=False, towing_num_str="2"):
         ####################################################
         #                Upload to InfluxDB                #
         ####################################################
         time_part = self._wib_now().strftime('%H:%M:%S')
-        if self.t2.lap < 1:
-            self.t2.lap = 0
 
-        turunan_lap = self.t2.lap - self.last_lap
-        self.last_lap = self.t2.lap
-        if turunan_lap < 0:
-            turunan_lap = 0  # Hindari penurunan lap negatif
+        # wtf hardcode sajalah
+        turunan_lap_int = int(0)
 
-        if turunan_lap > 0 and turunan_lap < 1:
-            turunan_lap = 1
-
-        turunan_lap_int = int(turunan_lap)
-
-        # logger.info(f"Lap {self.t2.lap}, dLap {turunan_lap_int}")
-
-        # Selalu rebuild InfluxDB client sebelum menulis
         try:
-            # logger.info(f"Writing to InfluxDB: lap={self.t2.lap}, d_lap={turunan_lap_int}")
-            # self._build_influx_client()
+            if towing_num_str == "2":
+                logger.info(f"{self.get_str_terminal(self.t2.terminal)}, {self.get_str_warning(self.t2.warning)}")
+                terminal_str = self.get_str_terminal(self.t2.terminal)
+                warning_str, offset = self.get_str_warning(self.t2.warning)
+                offset = offset * 1000
+                warning_pos_x = self.t2.pose_x
+                warning_pos_y = self.t2.pose_y
 
-            # # wait a bit 
-            # time.sleep(0.3)
-            logger.info(f"{self.get_str_terminal(self.t2.terminal)}, {self.get_str_warning(self.t2.warning)}")
-            terminal_str = self.get_str_terminal(self.t2.terminal)
-            warning_str, offset = self.get_str_warning(self.t2.warning)
-            offset = offset * 1000
-            warning_pos_x = self.t2.pose_x
-            warning_pos_y = self.t2.pose_y
+                if self.t2.pose_x > 0:
+                    warning_pos_x += offset
+                else:
+                    warning_pos_x -= offset
 
-            if self.t2.pose_x > 0:
-                warning_pos_x += offset
-            else:
-                warning_pos_x -= offset
+                if self.t2.pose_y > 0:
+                    warning_pos_y += offset
+                else:
+                    warning_pos_y -= offset
 
-            if self.t2.pose_y > 0:
-                warning_pos_y += offset
-            else:
-                warning_pos_y -= offset
+                if upload_all:
+                    self.write_sequently(
+                        fields=['lap', 'd_lap', 'soc', 'pos_x', 'pos_y', 'pos_theta', 'terminal', 'warning', 'warning_pos_x', 'warning_pos_y', 'timestamp'],
+                        values=[self.t2.lap, turunan_lap_int, self.t2.soc, self.t2.pose_x, self.t2.pose_y, self.t2.pose_theta, terminal_str, warning_str, warning_pos_x, warning_pos_y, time_part],
+                        robot_name=self.ROBOT_NAME_T2
+                    )
+                else:
+                    self.write_sequently(
+                        fields=['pos_x', 'pos_y', 'pos_theta', 'timestamp'],
+                        values=[self.t2.pose_x, self.t2.pose_y, self.t2.pose_theta, time_part],
+                        robot_name=self.ROBOT_NAME_T2
+                    )
+            elif towing_num_str == "1":
+                logger.info(f"{self.get_str_terminal(self.t1.terminal)}, {self.get_str_warning(self.t1.warning)}")
+                terminal_str = self.get_str_terminal(self.t1.terminal)
+                warning_str, offset = self.get_str_warning(self.t1.warning)
+                offset = offset * 1000
+                warning_pos_x = self.t1.pose_x
+                warning_pos_y = self.t1.pose_y
 
-            if upload_all:
-                self.write_sequently(
-                    fields=['lap', 'd_lap', 'soc', 'pos_x', 'pos_y', 'pos_theta', 'terminal', 'warning', 'warning_pos_x', 'warning_pos_y', 'timestamp'],
-                    values=[self.t2.lap, turunan_lap_int, self.t2.soc, self.t2.pose_x, self.t2.pose_y, self.t2.pose_theta, terminal_str, warning_str, warning_pos_x, warning_pos_y, time_part]
-                )
-            else:
-                self.write_sequently(
-                    fields=['pos_x', 'pos_y', 'pos_theta', 'timestamp'],
-                    values=[self.t2.pose_x, self.t2.pose_y, self.t2.pose_theta, time_part]
-                )
+                if self.t1.pose_x > 0:
+                    warning_pos_x += offset
+                else:
+                    warning_pos_x -= offset
+
+                if self.t1.pose_y > 0:
+                    warning_pos_y += offset
+                else:
+                    warning_pos_y -= offset
+
+                if upload_all:
+                    self.write_sequently(
+                        fields=['lap', 'd_lap', 'soc', 'pos_x', 'pos_y', 'pos_theta', 'terminal', 'warning', 'warning_pos_x', 'warning_pos_y', 'timestamp'],
+                        values=[self.t1.lap, turunan_lap_int, self.t1.soc, self.t1.pose_x, self.t1.pose_y, self.t1.pose_theta, terminal_str, warning_str, warning_pos_x, warning_pos_y, time_part],
+                        robot_name=self.ROBOT_NAME_T1
+                    )
+                else:
+                    self.write_sequently(
+                        fields=['pos_x', 'pos_y', 'pos_theta', 'timestamp'],
+                        values=[self.t1.pose_x, self.t1.pose_y, self.t1.pose_theta, time_part],
+                        robot_name=self.ROBOT_NAME_T1
+                    )
+            elif towing_num_str == "3":
+                logger.info(f"{self.get_str_terminal(self.t3.terminal)}, {self.get_str_warning(self.t3.warning)}")
+                terminal_str = self.get_str_terminal(self.t3.terminal)
+                warning_str, offset = self.get_str_warning(self.t3.warning)
+                offset = offset * 1000
+                warning_pos_x = self.t3.pose_x
+                warning_pos_y = self.t3.pose_y
+
+                if self.t3.pose_x > 0:
+                    warning_pos_x += offset
+                else:
+                    warning_pos_x -= offset
+
+                if self.t3.pose_y > 0:
+                    warning_pos_y += offset
+                else:
+                    warning_pos_y -= offset
+
+                if upload_all:
+                    self.write_sequently(
+                        fields=['lap', 'd_lap', 'soc', 'pos_x', 'pos_y', 'pos_theta', 'terminal', 'warning', 'warning_pos_x', 'warning_pos_y', 'timestamp'],
+                        values=[self.t3.lap, turunan_lap_int, self.t3.soc, self.t3.pose_x, self.t3.pose_y, self.t3.pose_theta, terminal_str, warning_str, warning_pos_x, warning_pos_y, time_part],
+                        robot_name=self.ROBOT_NAME_T3
+                    )
+                else:
+                    self.write_sequently(
+                        fields=['pos_x', 'pos_y', 'pos_theta', 'timestamp'],
+                        values=[self.t3.pose_x, self.t3.pose_y, self.t3.pose_theta, time_part],
+                        robot_name=self.ROBOT_NAME_T3
+                    )
         except Exception as e:
             logger.error(f"Error writing to InfluxDB: {e}")
 
