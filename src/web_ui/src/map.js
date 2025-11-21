@@ -34,9 +34,10 @@ class Robot {
 let robots = [];
 let wtf_skala = 10;
 // let wtf_skala = 60;
-var ip_server = window.location.hostname; // IP towing robot
+// var ip_server = window.location.hostname; // IP towing robot
 // var ip_server = "127.0.0.1"; // IP towing robot
 // var ip_server = "192.168.24.59"; // IP towing robot
+var ip_server = "192.168.18.49";
 let last_time_connect = new Date();
 
 // Create a Konva Stage
@@ -263,7 +264,7 @@ function addRobotImageWithToribe(ip, x, y, theta, radius, imageScale) {
     // console.log(`Creating NEW robot with IP: ${ip}`);
 
     // Check if images are loaded
-    if (!towingimage.complete || !toribeimage.complete) {
+    if (!towingimagbiru.complete || !toribeimage.complete) {
         console.error("Images not loaded yet");
         return;
     }
@@ -284,6 +285,15 @@ function addRobotImageWithToribe(ip, x, y, theta, radius, imageScale) {
 
     const towingX = x * wtf_skala;
     const towingY = y * wtf_skala;
+
+    let towingimage = null;
+    if (ip === "T1") {
+        towingimage = towingimagmerah;
+    } else if (ip === "T2") {
+        towingimage = towingimagbiru;
+    } else if (ip === "T3") {
+        towingimage = towingimaghijau;
+    }
 
     // Create towing vehicle image
     const conv_image = new Konva.Image({
@@ -365,7 +375,6 @@ function addRobotImageWithToribe(ip, x, y, theta, radius, imageScale) {
     robotLayer.add(conv_line);       // Direction line on top
 
     robotLayer.draw();
-
 }
 
 function addRobotImage(ip, x, y, theta, radius, imageScale) {
@@ -404,7 +413,7 @@ function addRobotImage(ip, x, y, theta, radius, imageScale) {
     const conv_image = new Konva.Image({
         x: x * wtf_skala,
         y: y * wtf_skala,
-        image: towingimage,
+        image: towingimagbiru,
         width: radius * 2 * wtf_skala,
         height: radius * 2 * wtf_skala,
         offsetX: radius * wtf_skala,
@@ -657,29 +666,60 @@ alarm_40.loop = true;
 const alarm_30 = new Audio('alarm30.wav');
 alarm_30.loop = true;
 
-const towingimage = new Image();
-towingimage.src = 'towing.png';
+const towingimagbiru = new Image();
+towingimagbiru.src = 'towing_biru.png';
+
+const towingimagmerah = new Image();
+towingimagmerah.src = 'towing_merah.png';
+
+const towingimaghijau = new Image();
+towingimaghijau.src = 'towing_hijau.png';
 
 const toribeimage = new Image();
 toribeimage.src = 'toribe.png';
 // ================================================================
 
 let wp_subscriber = null;
-let t2_odometry_subscriber = null;
-let t2_map_subscriber = null;
-let t2_status_emergency_subscriber = null;
-let t2_terminal_terakhir_subscriber = null;
-let t2_soc = null;
-let t2_counter_lap = null;
-let t2_lag_ms = null;
-let t2_lap_sum = null;
 
-let is_lap_subscribed = false;
+let t1_pose_x_packed = 0.0;
+let t1_pose_y_packed = 0.0;
+let t1_pose_theta_packed = 0.0;
+let t1_status_emergency_packed = 0;
+let t1_terminal_terakhir_packed = 0;
+let t1_battery_soc_packed = 0;
+let t1_counter_lap_packed = 0;
+let t1_lag_ms_packed = 0;
+let t1_lap_sum_packed = 0;
+
+let t2_pose_x_packed = 0.0;
+let t2_pose_y_packed = 0.0;
+let t2_pose_theta_packed = 0.0;
+let t2_status_emergency_packed = 0;
+let t2_terminal_terakhir_packed = 0;
+let t2_battery_soc_packed = 0;
+let t2_counter_lap_packed = 0;
+let t2_lag_ms_packed = 0;
+let t2_lap_sum_packed = 0;
+
+let t3_pose_x_packed = 0.0;
+let t3_pose_y_packed = 0.0;
+let t3_pose_theta_packed = 0.0;
+let t3_status_emergency_packed = 0;
+let t3_terminal_terakhir_packed = 0;
+let t3_battery_soc_packed = 0;
+let t3_counter_lap_packed = 0;
+let t3_lag_ms_packed = 0;
+let t3_lap_sum_packed = 0;
+
+let cycleNormal = 0;
+let cycleEmergency = 0;
 
 let currentStatus = null;
 let lastLoggedStatus = null;
 let lastTerminalStatus = null;
 let lastRosStatus = null;
+let currentLagMs = 0;
+let currentSocBat = 0;
 
 let currentSOC = 0;
 let currentLap = 0;
@@ -687,6 +727,123 @@ let currentX = 0.0;
 let currentY = 0.0;
 let currentTheta = 0.0;
 
+function checkPriorityStatus(status) {
+    let newStatus = null;
+
+    // console.log("Checking status:", status);
+
+    if ((status & STATUS_TOWING_ACTIVE_AUTO) == 0) {
+        newStatus = "Towing Mode Manual";
+    }
+    else if ((status & EMERGENCY_STOP_KARENA_OBSTACLE) == EMERGENCY_STOP_KARENA_OBSTACLE) {
+        newStatus = "WARNING: Towing Berhenti Karena Obstacle";
+    }
+    else if ((status & EMERGENCY_GYRO_ANOMALY_DETECTED) == EMERGENCY_GYRO_ANOMALY_DETECTED) {
+        newStatus = "WARNING: Gyro Anomali Terdeteksi";
+    }
+    else if ((status & EMERGENCY_ICP_SCORE_TERLALU_BESAR) == EMERGENCY_ICP_SCORE_TERLALU_BESAR) {
+        newStatus = "WARNING: Anomali Lingkungan Terdeteksi";
+    }
+    else if ((status & EMERGENCY_ICP_TRANSLATE_TERLALU_BESAR) == EMERGENCY_ICP_TRANSLATE_TERLALU_BESAR) {
+        newStatus = "WARNING: Hipotesis Kesalahan Posisi";
+    }
+    else if ((status & EMERGENCY_GANDENGAN_LEPAS) == EMERGENCY_GANDENGAN_LEPAS) {
+        status_emergency.innerHTML = "WARNING: TIDAK ADA TORIBE";
+    }
+    else if ((status & EMERGENCY_LIDAR_DEPAN_DETECTED) == EMERGENCY_LIDAR_DEPAN_DETECTED) {
+        newStatus = "WARNING: Lidar Mendeteksi Objek";
+    }
+    else if ((status & EMERGENCY_CAMERA_OBS_DETECTED) == EMERGENCY_CAMERA_OBS_DETECTED) {
+        newStatus = "WARNING: Kamera Mendeteksi Objek";
+    }
+    else {
+        newStatus = "Towing Normal";
+    }
+
+    const isPriority = newStatus !== "Towing Normal" && newStatus !== "Towing Mode Manual";
+    return { newStatus, isPriority };
+}
+
+function checkTerminalStatus(terminal) {
+    let terminalStatus = null;
+
+    // 0 Berangkat: Area jibcrane IST 
+    // 26 Berangkat: Tikungan samping lab 
+    // 24 Berangkat: Jalur 1 lurus depan YOKAI 1
+    // 1 Berangkat: Tikungan samping yokai 1
+    // 3 Berangkat: Jalur 1 lurus samping yokai 1 
+    // 5/6 Berangkat: Jalur 1 Tikungan Bawah tangga 
+    // 11 Berangkat: Jalur 1 lurus setelah bawah tangga 
+    // 15 Berangkat: Jalur 1 tikungan beacukai 
+    // 19 Berangkat: Jalur 1 lurus setelah beacukai 
+    // 23/46 Berangkat: Degasing 
+    // 7 Pulang: Degasing 
+    // 25/47 Pulang: Degasing 
+    // 35 Pulang: Jalur 2 lurus setelah beacukai
+    // 37 Pulang: Jalur 2 Tikungan beacukai 
+    // 38 Pulang: Jalur 2 lurus sebelum beacukai 
+    // 40 Pulang: Jalur 2 tikungan bawah tangga 
+    // 41 Pulang: Jalur 2 lurus samping yokai 1 
+    // 43/48 Pulang: Jalur 2 Tikungan jembatan penyebrangan
+    if (terminal == -1) {
+        terminalStatus = "Terminal Terakhir: Tempat Parkir";
+    }
+    else if (terminal == 0) {
+        terminalStatus = "Terminal Terakhir: Area Jibcrane IST (Berangkat)";
+    }
+    else if (terminal == 1) {
+        terminalStatus = "Terminal Terakhir: Tikungan Samping Yokai 1 (Berangkat)";
+    }
+    else if (terminal == 3) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Samping Yokai 1 (Berangkat)";
+    }
+    else if (terminal == 5 || terminal == 6) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Tikungan Bawah Tangga (Berangkat)";
+    }
+    else if (terminal == 7) {
+        terminalStatus = "Terminal Terakhir: Degasing (Pulang)";
+    }
+    else if (terminal == 11) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Setelah Bawah Tangga (Berangkat)";
+    }
+    else if (terminal == 15) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Tikungan Beacukai (Berangkat)";
+    }
+    else if (terminal == 19) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Setelah Beacukai (Berangkat)";
+    }
+    else if (terminal == 23 || terminal == 46) {
+        terminalStatus = "Terminal Terakhir: Degasing (Berangkat)";
+    }
+    else if (terminal == 24) {
+        terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Depan Yokai 1 (Berangkat)";
+    }
+    else if (terminal == 25 || terminal == 47) {
+        terminalStatus = "Terminal Terakhir: Degasing (Pulang)";
+    }
+    else if (terminal == 26) {
+        terminalStatus = "Terminal Terakhir: Tikungan Samping Lab (Berangkat)";
+    }
+    else if (terminal == 35) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Setelah Beacukai (Pulang)";
+    }
+    else if (terminal == 37) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Beacukai (Pulang)";
+    }
+    else if (terminal == 38) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Sebelum Beacukai (Pulang)";
+    }
+    else if (terminal == 40) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Bawah Tangga (Pulang)";
+    }
+    else if (terminal == 41) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Samping Yokai 1 (Pulang)";
+    }
+    else if (terminal == 43 || terminal == 48) {
+        terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Jembatan Penyebrangan (Pulang)";
+    }
+    return terminalStatus;
+}
 
 function getCurrentDateString() {
     const now = new Date();
@@ -699,45 +856,6 @@ function getCurrentDateString() {
 function getCurrentTimestamp() {
     const now = new Date();
     return now.toISOString();
-}
-
-function logCurrentRobotState() {
-    if (!is_lap_subscribed) {
-        return;
-    }
-    if (!lastTerminalStatus) {
-        return;
-    }
-
-    const logData = {
-        timestamp: new Date().toISOString(),
-        dateString: getCurrentDateString(),
-        terminal: lastTerminalStatus,
-        warning: currentStatus || "Towing Normal",
-        soc: currentSOC,
-        lap: currentLap,
-        x: currentX,
-        y: currentY,
-        theta: currentTheta
-    };
-
-    // fetch('http://${ip_server}:3001/log-robot-data', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(logData)
-    // })
-    //     .then(response => response.json());
-
-    fetch('http://' + ip_server + ':3002/log-robot-data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(logData)
-    })
-        .then(response => response.json());
 }
 
 // Connect to the ROS bridge WebSocket server
@@ -861,126 +979,78 @@ cam_main.onload = function () {
     console.log('Camera image loaded successfully.');
 };
 
-
-async function loadLapSum() {
-    try {
-        const res = await fetch('http://' + ip_server + ':3002/lap-sum', {
-            method: 'GET',
-            mode: 'cors',
-            headers: { 'Accept': 'application/json' }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        // The endpoint returns a JSON number (e.g., 123)
-        let total = await res.json();
-
-        // Fallback if server ever returns a string (e.g., "123")
-        if (typeof total !== 'number') {
-            total = Number.parseInt(total, 10);
-        }
-
-        console.log('Lap Sum:', total);
-
-        const formattedLap = total.toString().padStart(2, '0');
-        counter_lap.innerHTML = formattedLap;
-        label_lap.style.color = 'white';
-        counter_lap.style.color = 'white'
-
-    } catch (err) {
-        console.error('Failed to fetch lap sum:', err);
-    }
-}
-
-// setInterval(() => {
-//     loadLapSum();
-// }, 2000)
-
 // CAPEKKKKK, NEXT menambahkan terminal terakhir
 ros.on("connection", function () {
     console.log("Connected to WebSocket server.");
-    is_lap_subscribed = false;
     const connectionStatus = "ROS Connected";
 
     // ===================================================
-    t2_counter_lap = new ROSLIB.Topic({
+    t1_packed = new ROSLIB.Topic({
         ros: ros,
-        name: '/udp/t2/counter_lap',
-        messageType: 'std_msgs/Int32'
+        name: '/udp/t1/packed',
+        messageType: 'ros2_interface/Towing'
     });
-    t2_counter_lap.subscribe(function (message) {
-        const lap = message.data;
-        currentLap = lap;
-        is_lap_subscribed = true;
+    t1_packed.subscribe(function (message) {
+        // console.log("T1 Packed message received.");
+        t1_pose_x_packed = message.pose_x.data;
+        t1_pose_y_packed = message.pose_y.data;
+        t1_pose_theta_packed = message.pose_theta.data;
+        t1_status_emergency_packed = message.status_emergency.data;
+        t1_terminal_terakhir_packed = message.terminal_terakhir.data;
+        t1_battery_soc_packed = message.battery_soc.data;
+        t1_counter_lap_packed = message.counter_lap.data;
+        t1_lag_ms_packed = message.lag_ms.data;
+        t1_lap_sum_packed = message.lap_sum.data;
+        last_time_connect = new Date();
+        // console.log(t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed);
+        // console.log(t1_status_emergency_packed, t1_terminal_terakhir_packed, t1_battery_soc_packed);
+        // console.log(t1_counter_lap_packed, t1_lag_ms_packed, t1_lap_sum_packed);
     });
 
-    t2_lag_ms = new ROSLIB.Topic({
+    t2_packed = new ROSLIB.Topic({
         ros: ros,
-        name: '/udp/t2/lag_ms',
-        messageType: 'std_msgs/Int16'
+        name: '/udp/t2/packed',
+        messageType: 'ros2_interface/Towing'
     });
-    t2_lag_ms.subscribe(function (message) {
-        updateWiFiWidget(message.data)
+    t2_packed.subscribe(function (message) {
+        // console.log("T2 Packed message received.");
+        t2_pose_x_packed = message.pose_x.data;
+        t2_pose_y_packed = message.pose_y.data;
+        t2_pose_theta_packed = message.pose_theta.data;
+        t2_status_emergency_packed = message.status_emergency.data;
+        t2_terminal_terakhir_packed = message.terminal_terakhir.data;
+        t2_battery_soc_packed = message.battery_soc.data;
+        t2_counter_lap_packed = message.counter_lap.data;
+        t2_lag_ms_packed = message.lag_ms.data;
+        t2_lap_sum_packed = message.lap_sum.data;
+        last_time_connect = new Date();
+        // console.log(t2_pose_x_packed, t2_pose_y_packed, t2_pose_theta_packed);
+        // console.log(t2_status_emergency_packed, t2_terminal_terakhir_packed, t2_battery_soc_packed);
+        // console.log(t2_counter_lap_packed, t2_lag_ms_packed, t2_lap_sum_packed);
     });
 
-    t2_lap_sum = new ROSLIB.Topic({
+    t3_packed = new ROSLIB.Topic({
         ros: ros,
-        name: '/udp/t2/lap_sum',
-        messageType: 'std_msgs/Int16'
+        name: '/udp/t3/packed',
+        messageType: 'ros2_interface/Towing'
     });
-    t2_lap_sum.subscribe(function (message) {
-        const formattedLap = message.data.toString().padStart(2, '0');
-        counter_lap.innerHTML = formattedLap;
-        label_lap.style.color = 'white';
-        counter_lap.style.color = 'white'
+    t3_packed.subscribe(function (message) {
+        // console.log("T3 Packed message received.");
+        t3_pose_x_packed = message.pose_x.data;
+        t3_pose_y_packed = message.pose_y.data;
+        t3_pose_theta_packed = message.pose_theta.data;
+        t3_status_emergency_packed = message.status_emergency.data;
+        t3_terminal_terakhir_packed = message.terminal_terakhir.data;
+        t3_battery_soc_packed = message.battery_soc.data;
+        t3_counter_lap_packed = message.counter_lap.data;
+        t3_lag_ms_packed = message.lag_ms.data;
+        t3_lap_sum_packed = message.lap_sum.data;
+        last_time_connect = new Date();
+        // console.log(t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed);
+        // console.log(t3_status_emergency_packed, t3_terminal_terakhir_packed, t3_battery_soc_packed);
+        // console.log(t3_counter_lap_packed, t3_lag_ms_packed, t3_lap_sum_packed);
     });
-
-
-    t2_soc = new ROSLIB.Topic({
-        ros: ros,
-        name: '/udp/t2/battery_soc',
-        messageType: 'std_msgs/Int16'
-    });
-
-    t2_soc.subscribe(function (message) {
-        const soc = message.data;
-        currentSOC = soc;
-
-        updateBatteryAnimation(soc, false); // Set to true if you want charging animation
-
-        // Change color based on SOC value
-        if (soc < 5) {
-            if (test_audio_play == 0) {
-                if (!alarm_30.paused) {
-                    alarm_30.pause();
-                    alarm_30.currentTime = 0;
-                }
-                if (!alarm_40.paused) {
-                    alarm_40.pause();
-                    alarm_40.currentTime = 0;
-                }
-            }
-        }
-        else if (soc < 30) {
-            if (alarm_30.paused) {
-                alarm_30.play();
-            }
-        } else if (soc < 40) {
-            if (alarm_30.paused) {
-                alarm_30.play();
-            }
-        } else {
-            if (test_audio_play == 0) {
-                if (!alarm_30.paused) {
-                    alarm_30.pause();
-                    alarm_30.currentTime = 0;
-                }
-                if (!alarm_40.paused) {
-                    alarm_40.pause();
-                    alarm_40.currentTime = 0;
-                }
-            }
-        }
-    });
+    // ===================================================
 
     wp_subscriber = new ROSLIB.Topic({
         ros: ros,
@@ -1008,7 +1078,7 @@ ros.on("connection", function () {
         // Draw the waypoints
         const waypointsLine = new Konva.Line({
             points: waypoints,
-            stroke: 'red',
+            stroke: 'black',
             strokeWidth: 15,
         });
         waypointsLayer.add(waypointsLine);
@@ -1018,270 +1088,14 @@ ros.on("connection", function () {
         wp_subscriber.unsubscribe();
     }
     );
-
-    t2_odometry_subscriber = new ROSLIB.Topic({
-        ros: ros,
-        name: '/udp/t2/pose_filtered',
-        messageType: 'nav_msgs/Odometry'
-    });
-
-    t2_odometry_subscriber.subscribe(function (message) {
-        last_time_connect = new Date();
-        lastMessageTime = Date.now(); // Track last message
-        const x = message.pose.pose.position.x;
-        const y = message.pose.pose.position.y;
-        const q = message.pose.pose.orientation;
-        const theta = Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));
-        const radius = 4.05;
-
-        currentX = x;
-        currentY = y;
-        currentTheta = theta;
-
-        // addRobot("0.0.0.0", x, y, theta, radius, 'red');
-        // addRobotImage("0.0.0.0", x, y, theta, radius, 1.5);
-        addRobotImageWithToribe("0.0.0.0", x, y, theta, radius, 2.0);
-
-        // logCurrentRobotState();
-    });
-
-    t2_status_emergency_subscriber = new ROSLIB.Topic({
-        ros: ros,
-        name: "/udp/t2/status_emergency",
-        messageType: "std_msgs/Int16",
-    });
-
-    t2_status_emergency_subscriber.subscribe(function (message) {
-        let newStatus = null;
-        const rawData = message.data;
-
-        if ((message.data & STATUS_TOWING_ACTIVE_AUTO) == 0) {
-            newStatus = "Towing Mode Manual";
-            status_emergency.innerHTML = newStatus;
-            if (!alarm.paused) {
-                alarm.pause();
-                alarm.currentTime = 0;
-            }
-        }
-        else if ((message.data & EMERGENCY_STOP_KARENA_OBSTACLE) == EMERGENCY_STOP_KARENA_OBSTACLE) {
-            newStatus = "WARNING: Towing Berhenti Karena Obstacle";
-            status_emergency.innerHTML = newStatus;
-            if (alarm.paused) {
-                alarm.play();
-            }
-        }
-        else if ((message.data & EMERGENCY_GYRO_ANOMALY_DETECTED) == EMERGENCY_GYRO_ANOMALY_DETECTED) {
-            newStatus = "WARNING: Gyro Anomali Terdeteksi";
-            status_emergency.innerHTML = newStatus;
-            if (alarm.paused) {
-                alarm.play();
-            }
-        }
-        else if ((message.data & EMERGENCY_ICP_SCORE_TERLALU_BESAR) == EMERGENCY_ICP_SCORE_TERLALU_BESAR) {
-            newStatus = "WARNING: Anomali Lingkungan Terdeteksi";
-            status_emergency.innerHTML = newStatus;
-            if (alarm.paused) {
-                alarm.play();
-            }
-        }
-        else if ((message.data & EMERGENCY_ICP_TRANSLATE_TERLALU_BESAR) == EMERGENCY_ICP_TRANSLATE_TERLALU_BESAR) {
-            newStatus = "WARNING: Hipotesis Kesalahan Posisi";
-            status_emergency.innerHTML = newStatus;
-            if (alarm.paused) {
-                alarm.play();
-            }
-        }
-        else if ((message.data & EMERGENCY_GANDENGAN_LEPAS) == EMERGENCY_GANDENGAN_LEPAS) {
-            status_emergency.innerHTML = "WARNING: TIDAK ADA TORIBE";
-            if (alarm.paused) {
-                alarm.play();
-            }
-        }
-        else if ((message.data & EMERGENCY_LIDAR_DEPAN_DETECTED) == EMERGENCY_LIDAR_DEPAN_DETECTED) {
-            newStatus = "WARNING: Lidar Mendeteksi Objek";
-            status_emergency.innerHTML = newStatus;
-        }
-        else if ((message.data & EMERGENCY_CAMERA_OBS_DETECTED) == EMERGENCY_CAMERA_OBS_DETECTED) {
-            newStatus = "WARNING: Kamera Mendeteksi Objek";
-            status_emergency.innerHTML = newStatus;
-        }
-        else {
-            newStatus = "Towing Normal";
-            status_emergency.innerHTML = newStatus;
-            if (test_audio_play == 0) {
-                if (!alarm.paused) {
-                    alarm.pause();
-                    alarm.currentTime = 0;
-                }
-            }
-        }
-        const oldStatus = currentStatus;
-        // Selalu update status saat ini
-        currentStatus = newStatus;
-
-        const isImportantWarning = newStatus !== "Towing Normal";
-
-        // if (newStatus !== oldStatus && isImportantWarning) {
-        //     logCurrentRobotState();
-        // }
-    });
-
-    // ===================================================
-
-    t2_terminal_terakhir_subscriber = new ROSLIB.Topic({
-        ros: ros,
-        name: "/udp/t2/terminal_terakhir",
-        messageType: "std_msgs/Int16",
-    });
-
-    t2_terminal_terakhir_subscriber.subscribe(function (message) {
-        let terminal_terakhir_value = message.data;
-        let terminalStatus = null;
-
-        //0 Berangkat: Area jibcrane IST 
-        // 26 Berangkat: Tikungan samping lab 
-        // 24 Berangkat: Jalur 1 lurus depan YOKAI 1
-        // 1 Berangkat: Tikungan samping yokai 1
-        // 3 Berangkat: Jalur 1 lurus samping yokai 1 
-        // 5/6 Berangkat: Jalur 1 Tikungan Bawah tangga 
-        // 11 Berangkat: Jalur 1 lurus setelah bawah tangga 
-        // 15 Berangkat: Jalur 1 tikungan beacukai 
-        // 19 Berangkat: Jalur 1 lurus setelah beacukai 
-        // 23/46 Berangkat: Degasing 
-        // 7 Pulang: Degasing 
-        // 25/47 Pulang: Degasing 
-        // 35 Pulang: Jalur 2 lurus setelah beacukai
-        // 37 Pulang: Jalur 2 Tikungan beacukai 
-        // 38 Pulang: Jalur 2 lurus sebelum beacukai 
-        // 40 Pulang: Jalur 2 tikungan bawah tangga 
-        // 41 Pulang: Jalur 2 lurus samping yokai 1 
-        // 43/48 Pulang: Jalur 2 Tikungan jembatan penyebrangan
-        if (terminal_terakhir_value == -1) {
-            terminalStatus = "Terminal Terakhir: Tempat Parkir";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 0) {
-            terminalStatus = "Terminal Terakhir: Area Jibcrane IST (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 1) {
-            terminalStatus = "Terminal Terakhir: Tikungan Samping Yokai 1 (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 3) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Samping Yokai 1 (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 5 || terminal_terakhir_value == 6) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Tikungan Bawah Tangga (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 7) {
-            terminalStatus = "Terminal Terakhir: Degasing (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 11) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Setelah Bawah Tangga (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 15) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Tikungan Beacukai (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 19) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Setelah Beacukai (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 23 || terminal_terakhir_value == 46) {
-            terminalStatus = "Terminal Terakhir: Degasing (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 24) {
-            terminalStatus = "Terminal Terakhir: Jalur 1 Lurus Depan Yokai 1 (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 25 || terminal_terakhir_value == 47) {
-            terminalStatus = "Terminal Terakhir: Degasing (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 26) {
-            terminalStatus = "Terminal Terakhir: Tikungan Samping Lab (Berangkat)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 35) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Setelah Beacukai (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 37) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Beacukai (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 38) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Sebelum Beacukai (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 40) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Bawah Tangga (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 41) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Lurus Samping Yokai 1 (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-        else if (terminal_terakhir_value == 43 || terminal_terakhir_value == 48) {
-            terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Jembatan Penyebrangan (Pulang)";
-            terminal_terakhir.innerHTML = terminalStatus;
-        }
-
-        // if (terminalStatus && terminalStatus !== lastTerminalStatus) {
-        //     lastTerminalStatus = terminalStatus;
-        //     logCurrentRobotState();
-        // }
-    });
 });
 
 function destroy_ros_all() {
     isTryingToConnect = false;
-    is_lap_subscribed = false;
     console.log("Connection to WebSocket server closed.");
 
     resetBatteryAnimation(0, false);
     updateWiFiWidget(9999);
-
-    if (t2_odometry_subscriber) {
-        t2_odometry_subscriber.unsubscribe();
-        t2_odometry_subscriber = null;
-    }
-
-    if (t2_map_subscriber) {
-        t2_map_subscriber.unsubscribe();
-        t2_map_subscriber = null;
-    }
-
-    if (t2_status_emergency_subscriber) {
-        t2_status_emergency_subscriber.unsubscribe();
-        t2_status_emergency_subscriber = null;
-    }
-
-    if (wp_subscriber) {
-        wp_subscriber.unsubscribe();
-        wp_subscriber = null;
-    }
-
-    if (t2_soc) {
-        t2_soc.unsubscribe();
-        t2_soc = null;
-    }
-
-    if (t2_counter_lap) {
-        t2_counter_lap.unsubscribe();
-        t2_counter_lap = null;
-    }
-
-    if (t2_lag_ms) {
-        t2_lag_ms.unsubscribe();
-        t2_lag_ms = null;
-    }
 }
 
 ros.on("error", function (error) {
@@ -1292,28 +1106,163 @@ ros.on("close", function () {
     destroy_ros_all();
 });
 
+setInterval(() => {
+    // Change data for display based on priority
+    let isT1Priority = false;
+    let isT2Priority = false;
+    let isT3Priority = false;
+    let newStatusT1 = null;
+    let newStatusT2 = null;
+    let newStatusT3 = null;
+    let terminalStatusT1 = null;
+    let terminalStatusT2 = null;
+    let terminalStatusT3 = null;
 
+    ({ newStatus: newStatusT1, isPriority: isT1Priority } = checkPriorityStatus(t1_status_emergency_packed));
+    ({ newStatus: newStatusT2, isPriority: isT2Priority } = checkPriorityStatus(t2_status_emergency_packed));
+    ({ newStatus: newStatusT3, isPriority: isT3Priority } = checkPriorityStatus(t3_status_emergency_packed));
 
-// document.addEventListener('keydown', function (event) {
-//     if (event.key == "j") {
-//         test_audio_play = 1;
-//     }
-//     else if (event.key == 'u') {
-//         test_audio_play = 0;
-//     }
+    // console.log("T1 Priority:", isT1Priority, "Status:", newStatusT1);
+    // console.log("T2 Priority:", isT2Priority, "Status:", newStatusT2);
+    // console.log("T3 Priority:", isT3Priority, "Status:", newStatusT3);
 
-// });
+    terminalStatusT1 = checkTerminalStatus(t1_terminal_terakhir_packed);
+    terminalStatusT2 = checkTerminalStatus(t2_terminal_terakhir_packed);
+    terminalStatusT3 = checkTerminalStatus(t3_terminal_terakhir_packed);
 
-// setInterval(() => {
-//     if (test_audio_play == 1) {
-//         if (alarm.paused) {
-//             alarm.play();
-//         }
-//     }
-//     else {
-//         if (!alarm.paused) {
-//             alarm.pause();
-//             alarm.currentTime = 0;
-//         }
-//     }
-// }, 20);
+    let countPriority = 0;
+    if (isT1Priority) countPriority++;
+    if (isT2Priority) countPriority++;
+    if (isT3Priority) countPriority++;
+
+    let listPriority = [];
+    if (isT1Priority) listPriority.push(1);
+    if (isT2Priority) listPriority.push(2);
+    if (isT3Priority) listPriority.push(3);
+
+    if (t1_lag_ms_packed < 1000) {
+        addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
+    } else {
+        addRobotImageWithToribe("T1", 99999, 99999, t1_pose_theta_packed, 4.05, 2.0);
+        newStatusT1 = "Towing Disconnected";
+        t1_battery_soc_packed = 0;
+    }
+    if (t2_lag_ms_packed < 1000) {
+        addRobotImageWithToribe("T2", t2_pose_x_packed, t2_pose_y_packed, t2_pose_theta_packed, 4.05, 2.0);
+    } else {
+        addRobotImageWithToribe("T2", 99999, 99999, t2_pose_theta_packed, 4.05, 2.0);
+        newStatusT2 = "Towing Disconnected";
+        t2_battery_soc_packed = 0;
+    }
+    if (t3_lag_ms_packed < 1000) {
+        addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
+    } else {
+        addRobotImageWithToribe("T3", 99999, 99999, t3_pose_theta_packed, 4.05, 2.0);
+        newStatusT3 = "Towing Disconnected";
+        t3_battery_soc_packed = 0;
+    }
+
+    console.log("Count Priority:", countPriority);
+
+    if (countPriority === 0) {
+        console.log("Normal Cycle");
+        if (cycleNormal > 2) cycleNormal = 0;
+
+        if (cycleNormal === 0) {
+            currentLap = t1_lap_sum_packed;
+            currentStatus = newStatusT1;
+            lastTerminalStatus = terminalStatusT1;
+            currentLagMs = t1_lag_ms_packed;
+            currentSocBat = t1_battery_soc_packed;
+        } else if (cycleNormal === 1) {
+            currentLap = t2_lap_sum_packed;
+            currentStatus = newStatusT2;
+            lastTerminalStatus = terminalStatusT2;
+            currentLagMs = t2_lag_ms_packed;
+            currentSocBat = t2_battery_soc_packed;
+        } else if (cycleNormal === 2) {
+            currentLap = t3_lap_sum_packed;
+            currentStatus = newStatusT3;
+            lastTerminalStatus = terminalStatusT3;
+            currentLagMs = t3_lag_ms_packed;
+            currentSocBat = t3_battery_soc_packed;
+        }
+        cycleNormal++;
+    } else {
+        console.log("Emergency Cycle");
+        if (cycleEmergency > countPriority - 1) cycleEmergency = 0;
+
+        if (listPriority[cycleEmergency] === 1) {
+            currentLap = t1_lap_sum_packed;
+            currentStatus = newStatusT1;
+            lastTerminalStatus = terminalStatusT1;
+            currentLagMs = t1_lag_ms_packed;
+            currentSocBat = t1_battery_soc_packed;
+        } else if (listPriority[cycleEmergency] === 2) {
+            currentLap = t2_lap_sum_packed;
+            currentStatus = newStatusT2;
+            lastTerminalStatus = terminalStatusT2;
+            currentLagMs = t2_lag_ms_packed;
+            currentSocBat = t2_battery_soc_packed;
+        } else if (listPriority[cycleEmergency] === 3) {
+            currentLap = t3_lap_sum_packed;
+            currentStatus = newStatusT3;
+            lastTerminalStatus = terminalStatusT3;
+            currentLagMs = t3_lag_ms_packed;
+            currentSocBat = t3_battery_soc_packed;
+        }
+        cycleEmergency++;
+    }
+
+    // ==================================
+    //          ALARM BATERAI
+    // ==================================
+    if (currentSocBat < 5) {
+        if (test_audio_play == 0) {
+            if (!alarm_30.paused) {
+                alarm_30.pause();
+                alarm_30.currentTime = 0;
+            }
+        }
+    } else if (currentSocBat < 30) {
+        if (alarm_30.paused) {
+            alarm_30.play();
+        }
+    } else if (currentSocBat < 40) {
+        if (alarm_30.paused) {
+            alarm_30.play();
+        }
+    } else {
+        if (test_audio_play == 0) {
+            if (!alarm_30.paused) {
+                alarm_30.pause();
+                alarm_30.currentTime = 0;
+            }
+        }
+    }
+
+    // ==================================
+    //          ALARM WARNING
+    // ==================================
+    if (currentStatus === "Towing Mode Manual" || currentStatus === "Towing Normal") {
+        if (!alarm.paused) {
+            alarm.pause();
+            alarm.currentTime = 0;
+        }
+    } else if (currentStatus !== "WARNING: Lidar Mendeteksi Objek" && currentStatus !== "WARNING: Kamera Mendeteksi Objek" && currentStatus !== "Towing Disconnected") {
+        if (alarm.paused) {
+            alarm.play();
+        }
+    }
+
+    const formattedLap = currentLap.toString().padStart(2, '0');
+    counter_lap.innerHTML = formattedLap;
+    label_lap.style.color = 'white';
+    counter_lap.style.color = 'white';
+    status_emergency.innerHTML = currentStatus;
+    terminal_terakhir.innerHTML = lastTerminalStatus;
+    updateWiFiWidget(currentLagMs);
+    updateBatteryAnimation(currentSocBat, false);
+    console.log("Current Status:", currentStatus, "Current Lap:", currentLap, "T:", cycleNormal + 1);
+
+}, 2000);
