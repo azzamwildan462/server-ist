@@ -1143,21 +1143,21 @@ setInterval(() => {
     if (t1_lag_ms_packed < 1000) {
         addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
     } else {
-        addRobotImageWithToribe("T1", 99999, 99999, t1_pose_theta_packed, 4.05, 2.0);
+        addRobotImageWithToribe("T1", 99999, 99999, 0, 4.05, 2.0);
         newStatusT1 = "Towing Disconnected";
         t1_battery_soc_packed = 0;
     }
     if (t2_lag_ms_packed < 1000) {
         addRobotImageWithToribe("T2", t2_pose_x_packed, t2_pose_y_packed, t2_pose_theta_packed, 4.05, 2.0);
     } else {
-        addRobotImageWithToribe("T2", 99999, 99999, t2_pose_theta_packed, 4.05, 2.0);
+        addRobotImageWithToribe("T2", 99999, 99999, 0, 4.05, 2.0);
         newStatusT2 = "Towing Disconnected";
         t2_battery_soc_packed = 0;
     }
     if (t3_lag_ms_packed < 1000) {
         addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
     } else {
-        addRobotImageWithToribe("T3", 99999, 99999, t3_pose_theta_packed, 4.05, 2.0);
+        addRobotImageWithToribe("T3", 99999, 99999, 0, 4.05, 2.0);
         newStatusT3 = "Towing Disconnected";
         t3_battery_soc_packed = 0;
     }

@@ -647,19 +647,49 @@ class UDP2ROSLIB(Node):
         #                    Send UDP                      #
         ####################################################
         # Create buffer string for UDP sending
+
+        t1_pose_x_send = self.t1.pose_x
+        t1_pose_y_send = self.t1.pose_y
+        t1_pose_theta_send = self.t1.pose_theta
+        t1_terminal_send = self.t1.terminal
+        t2_pose_x_send = self.t2.pose_x
+        t2_pose_y_send = self.t2.pose_y
+        t2_pose_theta_send = self.t2.pose_theta
+        t2_terminal_send = self.t2.terminal
+        t3_pose_x_send = self.t3.pose_x
+        t3_pose_y_send = self.t3.pose_y
+        t3_pose_theta_send = self.t3.pose_theta        
+        t3_terminal_send = self.t3.terminal
+
+        if(self.msg_t1_packed.lag_ms.data > 1000):
+            t1_pose_x_send = 99999.0
+            t1_pose_y_send = 99999.0
+            t1_pose_theta_send = 0.0
+            t1_terminal_send = -1
+        if(self.msg_t2_packed.lag_ms.data > 1000):
+            t2_pose_x_send = 99999.0
+            t2_pose_y_send = 99999.0
+            t2_pose_theta_send = 0.0
+            t2_terminal_send = -1
+        if(self.msg_t3_packed.lag_ms.data > 1000):
+            t3_pose_x_send = 99999.0
+            t3_pose_y_send = 99999.0
+            t3_pose_theta_send = 0.0
+            t3_terminal_send = -1
+
         udp_buffer = struct.pack('f f f f f f f f f f f f',
-            float(self.t1.terminal),
-            float(self.t1.pose_x),
-            float(self.t1.pose_y),
-            float(self.t1.pose_theta),
-            float(self.t2.terminal),
-            float(self.t2.pose_x),
-            float(self.t2.pose_y),
-            float(self.t2.pose_theta),
-            float(self.t3.terminal),
-            float(self.t3.pose_x),
-            float(self.t3.pose_y),
-            float(self.t3.pose_theta)
+            float(t1_terminal_send),
+            float(t1_pose_x_send),
+            float(t1_pose_y_send),
+            float(t1_pose_theta_send),
+            float(t2_terminal_send),
+            float(t2_pose_x_send),
+            float(t2_pose_y_send),
+            float(t2_pose_theta_send),
+            float(t3_terminal_send),
+            float(t3_pose_x_send),
+            float(t3_pose_y_send),
+            float(t3_pose_theta_send)
         )
         try:
             logger.info(f"Sending UDP to T1")
