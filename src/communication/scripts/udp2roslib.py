@@ -156,6 +156,8 @@ class UDP2ROSLIB(Node):
         self.t3_has_get_last_log_data = False
         self.t3_last_time_influx_db = 0
 
+        self.threshold_keterlambatan_data = 2500
+
         # Setup Flask app
         self.app = Flask(__name__)
         CORS(self.app)
@@ -661,17 +663,17 @@ class UDP2ROSLIB(Node):
         t3_pose_theta_send = self.t3.pose_theta        
         t3_terminal_send = self.t3.terminal
 
-        if(self.msg_t1_packed.lag_ms.data > 1000):
+        if(self.msg_t1_packed.lag_ms.data > self.threshold_keterlambatan_data):
             t1_pose_x_send = 99999.0
             t1_pose_y_send = 99999.0
             t1_pose_theta_send = 0.0
             t1_terminal_send = -1
-        if(self.msg_t2_packed.lag_ms.data > 1000):
+        if(self.msg_t2_packed.lag_ms.data > self.threshold_keterlambatan_data):
             t2_pose_x_send = 99999.0
             t2_pose_y_send = 99999.0
             t2_pose_theta_send = 0.0
             t2_terminal_send = -1
-        if(self.msg_t3_packed.lag_ms.data > 1000):
+        if(self.msg_t3_packed.lag_ms.data > self.threshold_keterlambatan_data):
             t3_pose_x_send = 99999.0
             t3_pose_y_send = 99999.0
             t3_pose_theta_send = 0.0
@@ -691,21 +693,6 @@ class UDP2ROSLIB(Node):
             float(t3_pose_y_send),
             float(t3_pose_theta_send)
         )
-        try:
-            logger.info(f"Sending UDP to T1")
-            self.sock_client_t1.send(udp_buffer)
-        except Exception as e:
-            logger.error(f"Error sending UDP to T1: {e}")
-        try:
-            logger.info(f"Sending UDP to T2")
-            self.sock_client_t2.send(udp_buffer)
-        except Exception as e:
-            logger.error(f"Error sending UDP to T2: {e}")   
-        try:
-            logger.info(f"Sending UDP to T3")
-            self.sock_client_t3.send(udp_buffer)
-        except Exception as e:
-            logger.error(f"Error sending UDP to T3: {e}")
 
         ####################################################
         #              Logging and InfluxDB                #
@@ -810,15 +797,15 @@ class UDP2ROSLIB(Node):
         if time_now_ms - self.last_time_update_lag > 1000:
             self.last_time_update_lag = time_now_ms
             t2_lag_ms_buffer = time_now_ms - self.t2.ts_ms
-            if t2_lag_ms_buffer < 1000:
+            if t2_lag_ms_buffer < self.threshold_keterlambatan_data:
                 t2_lag_ms_buffer = 30 # zzz
 
             t1_lag_ms_buffer = time_now_ms - self.t1.ts_ms
-            if t1_lag_ms_buffer < 1000:
+            if t1_lag_ms_buffer < self.threshold_keterlambatan_data:
                 t1_lag_ms_buffer = 30 # zzz
 
             t3_lag_ms_buffer = time_now_ms - self.t3.ts_ms
-            if t3_lag_ms_buffer < 1000:
+            if t3_lag_ms_buffer < self.threshold_keterlambatan_data:
                 t3_lag_ms_buffer = 30 # zzz
 
             # reset t2 telat 1 tick tapi gapapa 
@@ -846,15 +833,31 @@ class UDP2ROSLIB(Node):
                 self.msg_t3_packed.lag_ms.data = 9999
             else:
                 self.msg_t3_packed.lag_ms.data = t3_lag_ms_buffer
-        
-        # Publish
-        self.pub_t2.publish(self.msg_t2_packed)
-        self.pub_t1.publish(self.msg_t2_packed)
-        self.pub_t3.publish(self.msg_t2_packed)
 
         if time_now_ms - self.last_time_waypoint_published_ms > 1000:
             self.last_time_waypoint_published_ms = time_now_ms 
             self.pub_waypoint.publish(self.wtf_pcl)
+
+            # Publish
+            self.pub_t2.publish(self.msg_t2_packed)
+            self.pub_t1.publish(self.msg_t1_packed)
+            self.pub_t3.publish(self.msg_t3_packed)
+
+            try:
+                # logger.info(f"Sending UDP to T1")
+                self.sock_client_t1.send(udp_buffer)
+            except Exception as e:
+                logger.error(f"Error sending UDP to T1: {e}")
+            try:
+                # logger.info(f"Sending UDP to T2")
+                self.sock_client_t2.send(udp_buffer)
+            except Exception as e:
+                logger.error(f"Error sending UDP to T2: {e}")   
+            try:
+                # logger.info(f"Sending UDP to T3")
+                self.sock_client_t3.send(udp_buffer)
+            except Exception as e:
+                logger.error(f"Error sending UDP to T3: {e}")
 
     def get_last_log_data(self, towing_num_str):
         ####################################################

@@ -77,9 +77,9 @@ def generate_launch_description():
             "waypoint_file_path": os.path.join(path_config, "waypoint.csv"),
             "MY_SERVER_IP": "0.0.0.0",
             "MY_SERVER_PORT": 1254,
-            "T2_IP": "192.168.18.56",
+            "T2_IP": "10.20.30.40",
             "T2_PORT": 1254,
-            "T1_IP": "192.168.18.1",
+            "T1_IP": "10.20.30.188",
             "T1_PORT": 1254,
             "T3_IP": "192.168.18.2",
             "T3_PORT": 1254,
@@ -104,6 +104,7 @@ def generate_launch_description():
         name="rtsp2mjpeg",
         parameters=[{
             "http_port": 7892,
+            "hosts": ["10.20.30.52", "", ""]
         }],
         output="screen",
         respawn=True,
@@ -162,6 +163,6 @@ def generate_launch_description():
             # wifi_control,
             # camproxy,
             udp2roslib,
-            # rtsp2mjpeg,
+            rtsp2mjpeg,
         ]
     )

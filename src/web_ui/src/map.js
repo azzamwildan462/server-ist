@@ -34,10 +34,10 @@ class Robot {
 let robots = [];
 let wtf_skala = 10;
 // let wtf_skala = 60;
-// var ip_server = window.location.hostname; // IP towing robot
+var ip_server = window.location.hostname; // IP towing robot
 // var ip_server = "127.0.0.1"; // IP towing robot
 // var ip_server = "192.168.24.59"; // IP towing robot
-var ip_server = "192.168.18.49";
+// var ip_server = "10.181.129.177";
 let last_time_connect = new Date();
 
 // Create a Konva Stage
@@ -646,13 +646,15 @@ const EMERGENCY_ICP_SCORE_TERLALU_BESAR = 0b10000
 const EMERGENCY_ICP_TRANSLATE_TERLALU_BESAR = 0b100000
 const EMERGENCY_STOP_KARENA_OBSTACLE = 0b1000000
 const EMERGENCY_GANDENGAN_LEPAS = 0b100000000
+const EMERGENCY_DEKAT_TEMAN = 0b1000000000
 const STATUS_TOWING_ACTIVE_AUTO = 0b01
 
 const status_emergency = document.getElementById('status-emergency');
 const terminal_terakhir = document.getElementById('terminal-terakhir');
 const counter_lap = document.getElementById('counter-lap');
 const label_lap = document.getElementById('label-lap');
-const cam_main = document.getElementById('cam-main');
+let cam_main = document.getElementById('cam-main');
+let towing_id = document.getElementById('towing-id');
 
 let isTryingToConnect = false;
 
@@ -727,6 +729,10 @@ let currentX = 0.0;
 let currentY = 0.0;
 let currentTheta = 0.0;
 
+let prev_camera_string = "";
+
+let counter_cycle_change = 0;
+
 function checkPriorityStatus(status) {
     let newStatus = null;
 
@@ -748,7 +754,10 @@ function checkPriorityStatus(status) {
         newStatus = "WARNING: Hipotesis Kesalahan Posisi";
     }
     else if ((status & EMERGENCY_GANDENGAN_LEPAS) == EMERGENCY_GANDENGAN_LEPAS) {
-        status_emergency.innerHTML = "WARNING: TIDAK ADA TORIBE";
+        newStatus = "WARNING: TIDAK ADA TORIBE";
+    }
+    else if ((status & EMERGENCY_DEKAT_TEMAN) == EMERGENCY_DEKAT_TEMAN) {
+        newStatus = "WARNING: Terlalu Dekat Teman";
     }
     else if ((status & EMERGENCY_LIDAR_DEPAN_DETECTED) == EMERGENCY_LIDAR_DEPAN_DETECTED) {
         newStatus = "WARNING: Lidar Mendeteksi Objek";
@@ -912,18 +921,14 @@ setInterval(() => {
         //	connectRos();
         location.reload();
     }
-    console.log("Time: ", time_diff);
-
-
+    // console.log("Time: ", time_diff);
     if (!ros.isConnected) {
         status_emergency.innerHTML = "Towing Disconnected";
-
         // Log reconnection attempt only once every 30 seconds to avoid spam
         const now = Date.now();
         if (now - lastReconnectAttempt > 50000) {
             lastReconnectAttempt = now;
         }
-
         connectRos();
     }
 }, 3000);
@@ -931,17 +936,14 @@ setInterval(() => {
 
 function reconnectImg(elemOrId, baseUrl) {
     const oldImg = typeof elemOrId === 'string' ? document.getElementById(elemOrId) : elemOrId;
-
     // Buat IMG baru dari nol (tanpa koneksi/event lama)
     const fresh = new Image();
     fresh.width = oldImg.width;
     fresh.height = oldImg.height;
     fresh.alt = oldImg.alt || '';
-
     // (Opsional) copy class/style
     fresh.className = oldImg.className;
     fresh.style.cssText = oldImg.style.cssText;
-
     // Pasang handler sebelum set src
     fresh.onload = () => {
         // sukses → lepas dan buang img lama
@@ -951,33 +953,29 @@ function reconnectImg(elemOrId, baseUrl) {
         // gagal → coba lagi dengan backoff kecil
         setTimeout(() => reconnectImg(fresh, baseUrl), 1000);
     };
-
     // Putus koneksi lama sebersih mungkin
     oldImg.src = '';
     oldImg.removeAttribute('src');      // beberapa browser perlu ini
-
     // Paksa URL unik (cache-buster)
     const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'ts=' + Date.now();
     fresh.src = url;
 }
 
-cam_main.src = 'http://' + ip_server + ':7890/cam1.mjpeg';
-let last_time_camera_normal = 0;
-setInterval(() => {
-    let time_now = Date.now();
-    let time_diff = time_now - last_time_camera_normal;
-    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
-    if (Math.floor(time_diff / 1000) > 10) {
-        console.log("Camera seems disconnected, refreshing...");
-        reconnectImg(cam_main, 'http://' + ip_server + ':7890/cam1.mjpeg');
-    }
+// let last_time_camera_normal = 0;
+// setInterval(() => {
+//     let time_now = Date.now();
+//     let time_diff = time_now - last_time_camera_normal;
+//     console.log("Camera time diff: ", Math.floor(time_diff / 1000));
+//     if (Math.floor(time_diff / 1000) > 10) {
+//         console.log("Camera seems disconnected, refreshing...");
+//         reconnectImg(cam_main, cam_main.src);
+//     }
+// }, 3000);
 
-}, 3000);
-
-cam_main.onload = function () {
-    last_time_camera_normal = Date.now();
-    console.log('Camera image loaded successfully.');
-};
+// cam_main.onload = function () {
+//     last_time_camera_normal = Date.now();
+//     console.log('Camera image loaded successfully.');
+// };
 
 // CAPEKKKKK, NEXT menambahkan terminal terakhir
 ros.on("connection", function () {
@@ -1117,12 +1115,17 @@ setInterval(() => {
     let terminalStatusT1 = null;
     let terminalStatusT2 = null;
     let terminalStatusT3 = null;
+    let string_camera = null;
+    let current_id = null;
 
     ({ newStatus: newStatusT1, isPriority: isT1Priority } = checkPriorityStatus(t1_status_emergency_packed));
     ({ newStatus: newStatusT2, isPriority: isT2Priority } = checkPriorityStatus(t2_status_emergency_packed));
     ({ newStatus: newStatusT3, isPriority: isT3Priority } = checkPriorityStatus(t3_status_emergency_packed));
 
     // console.log("T1 Priority:", isT1Priority, "Status:", newStatusT1);
+    // console.log("T1 SoC:", t1_battery_soc_packed, "Lag:", t1_lag_ms_packed);
+    // console.log("T1 Terminal:", t1_terminal_terakhir_packed, "Mode:", t1_status_emergency_packed);
+    // console.log("T1 Pose:", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed);
     // console.log("T2 Priority:", isT2Priority, "Status:", newStatusT2);
     // console.log("T3 Priority:", isT3Priority, "Status:", newStatusT3);
 
@@ -1140,57 +1143,82 @@ setInterval(() => {
     if (isT2Priority) listPriority.push(2);
     if (isT3Priority) listPriority.push(3);
 
-    if (t1_lag_ms_packed < 1000) {
+    const threshold_lag_ms = 2000;
+
+    let countActive = 0;
+    if (t1_lag_ms_packed < threshold_lag_ms) countActive++;
+    if (t2_lag_ms_packed < threshold_lag_ms) countActive++;
+    if (t3_lag_ms_packed < threshold_lag_ms) countActive++;
+
+    let listActive = [];
+    if (t1_lag_ms_packed < threshold_lag_ms) listActive.push(1);
+    if (t2_lag_ms_packed < threshold_lag_ms) listActive.push(2);
+    if (t3_lag_ms_packed < threshold_lag_ms) listActive.push(3);
+
+    if (t1_lag_ms_packed < threshold_lag_ms) {
         addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
     } else {
         addRobotImageWithToribe("T1", 99999, 99999, 0, 4.05, 2.0);
+        // console.log("T1 Disconnected due to lag:", t1_lag_ms_packed);
         newStatusT1 = "Towing Disconnected";
         t1_battery_soc_packed = 0;
     }
-    if (t2_lag_ms_packed < 1000) {
+    if (t2_lag_ms_packed < threshold_lag_ms) {
         addRobotImageWithToribe("T2", t2_pose_x_packed, t2_pose_y_packed, t2_pose_theta_packed, 4.05, 2.0);
     } else {
         addRobotImageWithToribe("T2", 99999, 99999, 0, 4.05, 2.0);
+        // console.log("T2 Disconnected due to lag:", t2_lag_ms_packed);
         newStatusT2 = "Towing Disconnected";
         t2_battery_soc_packed = 0;
     }
-    if (t3_lag_ms_packed < 1000) {
+    if (t3_lag_ms_packed < threshold_lag_ms) {
         addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
     } else {
         addRobotImageWithToribe("T3", 99999, 99999, 0, 4.05, 2.0);
+        // console.log("T3 Disconnected due to lag:", t3_lag_ms_packed);
         newStatusT3 = "Towing Disconnected";
         t3_battery_soc_packed = 0;
     }
 
-    console.log("Count Priority:", countPriority);
+    // console.log("Count Active:", countActive);
+    // console.log("Count Priority:", countPriority);
 
     if (countPriority === 0) {
-        console.log("Normal Cycle");
-        if (cycleNormal > 2) cycleNormal = 0;
+        if (cycleNormal > countActive - 1) cycleNormal = 0;
+        console.log("Normal Cycle", "T=", listActive[cycleNormal]);
 
-        if (cycleNormal === 0) {
+        if (listActive[cycleNormal] === 1) {
             currentLap = t1_lap_sum_packed;
             currentStatus = newStatusT1;
             lastTerminalStatus = terminalStatusT1;
             currentLagMs = t1_lag_ms_packed;
             currentSocBat = t1_battery_soc_packed;
-        } else if (cycleNormal === 1) {
+            string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
+            current_id = 1;
+        } else if (listActive[cycleNormal] === 2) {
             currentLap = t2_lap_sum_packed;
             currentStatus = newStatusT2;
             lastTerminalStatus = terminalStatusT2;
             currentLagMs = t2_lag_ms_packed;
             currentSocBat = t2_battery_soc_packed;
-        } else if (cycleNormal === 2) {
+            string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
+            current_id = 2;
+        } else if (listActive[cycleNormal] === 3) {
             currentLap = t3_lap_sum_packed;
             currentStatus = newStatusT3;
             lastTerminalStatus = terminalStatusT3;
             currentLagMs = t3_lag_ms_packed;
             currentSocBat = t3_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
+            current_id = 3;
         }
-        cycleNormal++;
+        if (counter_cycle_change++ > 30) {
+            cycleNormal++;
+            counter_cycle_change = 0;
+        }
     } else {
-        console.log("Emergency Cycle");
         if (cycleEmergency > countPriority - 1) cycleEmergency = 0;
+        console.log("Emergency Cycle", "T=", listPriority[cycleEmergency]);
 
         if (listPriority[cycleEmergency] === 1) {
             currentLap = t1_lap_sum_packed;
@@ -1198,20 +1226,29 @@ setInterval(() => {
             lastTerminalStatus = terminalStatusT1;
             currentLagMs = t1_lag_ms_packed;
             currentSocBat = t1_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
+            current_id = 1;
         } else if (listPriority[cycleEmergency] === 2) {
             currentLap = t2_lap_sum_packed;
             currentStatus = newStatusT2;
             lastTerminalStatus = terminalStatusT2;
             currentLagMs = t2_lag_ms_packed;
             currentSocBat = t2_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
+            current_id = 2;
         } else if (listPriority[cycleEmergency] === 3) {
             currentLap = t3_lap_sum_packed;
             currentStatus = newStatusT3;
             lastTerminalStatus = terminalStatusT3;
             currentLagMs = t3_lag_ms_packed;
             currentSocBat = t3_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
+            current_id = 3;
         }
-        cycleEmergency++;
+        if (counter_cycle_change++ > 30) {
+            cycleEmergency++;
+            counter_cycle_change = 0;
+        }
     }
 
     // ==================================
@@ -1249,7 +1286,7 @@ setInterval(() => {
             alarm.pause();
             alarm.currentTime = 0;
         }
-    } else if (currentStatus !== "WARNING: Lidar Mendeteksi Objek" && currentStatus !== "WARNING: Kamera Mendeteksi Objek" && currentStatus !== "Towing Disconnected") {
+    } else if (currentStatus !== "WARNING: Lidar Mendeteksi Objek" && currentStatus !== "WARNING: Kamera Mendeteksi Objek" && currentStatus !== "Towing Disconnected" && currentStatus !== "WARNING: Terlalu Dekat Teman") {
         if (alarm.paused) {
             alarm.play();
         }
@@ -1261,8 +1298,35 @@ setInterval(() => {
     counter_lap.style.color = 'white';
     status_emergency.innerHTML = currentStatus;
     terminal_terakhir.innerHTML = lastTerminalStatus;
+    if (current_id === null) {
+        towing_id.innerHTML = "Towing: " + "T-";
+        towing_id.style.color = '#FFFFFF'; // Putih
+    } else {
+        towing_id.innerHTML = "Towing: " + "T" + current_id;
+
+        if (current_id === 1) {
+            towing_id.style.color = '#FF0000'; // Merah
+        } else if (current_id === 2) {
+            towing_id.style.color = '#00BFFF'; // Biru
+        } else if (current_id === 3) {
+            towing_id.style.color = '#00FF00'; // Hijau
+        }
+    }
+
     updateWiFiWidget(currentLagMs);
     updateBatteryAnimation(currentSocBat, false);
-    console.log("Current Status:", currentStatus, "Current Lap:", currentLap, "T:", cycleNormal + 1);
 
-}, 2000);
+    if (prev_camera_string !== string_camera) {
+        console.log("Camera changed to:", string_camera);
+        cam_main.src = "";
+        cam_main.removeAttribute('src');      // beberapa browser perlu ini
+        setTimeout(() => {
+            // console.log("qweqwew");
+            cam_main.src = string_camera;
+        }, 1000);
+    }
+
+    prev_camera_string = string_camera;
+    // console.log("Current Status:", currentStatus, "Current Lap:", currentLap, "T:", cycleNormal + 1);
+
+}, 1000);
