@@ -1,0 +1,686 @@
+.container-textku {
+    position: fixed;
+    top: 40px;
+    right: 500px;
+    z-index: 1000;
+}
+
+.battery-container {
+    position: fixed;
+    top: 60px;
+    right: 15px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 25px;
+    /* 75% dari 25px */
+    border-radius: 25px;
+    /* 75% dari 25px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    /* 75% dari 20px */
+}
+
+.battery-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.battery-icon {
+    width: 60px;
+    /* 75% dari 120px */
+    height: 87px;
+    /* 75% dari 250px */
+    border: 5px solid #333;
+    /* 75% dari 6px */
+    border-radius: 19px;
+    /* 75% dari 25px */
+    position: relative;
+    background: #f5f5f5;
+}
+
+.battery-tip {
+    width: 25px;
+    /* 75% dari 60px */
+    height: 15px;
+    /* 75% dari 20px */
+    background: #fff;
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    /* 75% dari -24px */
+    transform: translateX(-50%);
+    border-radius: 6px 6px 0 0;
+    /* 75% dari 8px */
+}
+
+.battery-level {
+    height: 0%;
+    width: 100%;
+    border-radius: 11px;
+    /* 75% dari 15px */
+    transition: height 0.8s ease, background-color 0.8s ease;
+    position: absolute;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.battery-level::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent);
+    animation: batteryShine 2s infinite;
+}
+
+@keyframes batteryShine {
+    0% {
+        top: -100%;
+    }
+
+    100% {
+        top: 100%;
+    }
+}
+
+.battery-percentage {
+    color: #fff;
+    font-size: 36px;
+    /* 75% dari 48px */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    /* 75% dari 10px */
+}
+
+/* Battery level colors */
+.battery-high {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+}
+
+.battery-medium {
+    background: linear-gradient(45deg, #FF9800, #FFC107);
+}
+
+.battery-low {
+    background: linear-gradient(45deg, #F44336, #E91E63);
+    animation: batteryBlink 1s infinite alternate;
+}
+
+.battery-critical {
+    background: linear-gradient(45deg, #B71C1C, #F44336);
+    animation: batteryBlink 0.5s infinite alternate;
+}
+
+@keyframes batteryBlink {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.3;
+    }
+}
+
+/* Charging animation */
+.battery-charging {
+    animation: batteryPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes batteryPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Lightning bolt for charging */
+.charging-bolt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFD700;
+    font-size: 36px;
+    /* 75% dari 48px */
+    display: none;
+    animation: boltFlash 0.8s infinite alternate;
+}
+
+@keyframes boltFlash {
+    0% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.battery-status {
+    color: #fff;
+    font-size: 1px;
+    /* 75% dari 18px */
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* LAP Counter Widget */
+.lap-container {
+    position: fixed;
+    top: 60px;
+    right: 205px;
+    /* 75% dari 100px */
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 17px;
+    /* 75% dari 25px */
+    border-radius: 17px;
+    /* 75% dari 25px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 113px;
+    /* height: 100px; */
+    /* 75% dari 150px */
+}
+
+.lap-label {
+    color: #fff;
+    font-size: 1.15rem;
+    /* 1.5x dari 1.75rem */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    /* 75% dari 10px */
+}
+
+.lap-counter {
+    color: #fff;
+    font-size: 2.8rem;
+    /* 75% dari 9rem */
+    font-weight: bold;
+    text-align: center;
+}
+
+/* WiFi Signal Widget */
+.wifi-container {
+    position: fixed;
+    top: 60px;
+    right: 325px;
+    /* 75% dari 380px */
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    /* 75% dari 20px */
+    border-radius: 20px;
+    /* 75% dari 20px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    /* 75% dari 120px */
+    transform: scale(1.0);
+    transform-origin: top right;
+}
+
+.wifi-label {
+    color: #fff;
+    font-size: 1px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.wifi-bars {
+    position: relative;
+    /* Lebarkan kontainer agar semua busur muat */
+    width: 70px;
+    /* Diperbesar dari 60px */
+    height: 30px;
+    /* Diperbesar dari 40px */
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.wifi-bar {
+    position: absolute;
+    /* Sesuaikan posisi vertikal agar busur tidak terpotong di bagian bawah */
+    bottom: -10px;
+    /* Geser ke bawah 10px */
+    border-radius: 50%;
+    border: 4px solid #fff;
+    clip-path: inset(0 0 50% 0);
+}
+
+/* Ukuran berbeda untuk setiap busur agar bertingkat */
+.wifi-bar-1 {
+    width: 10px;
+    height: 10px;
+}
+
+.wifi-bar-2 {
+    width: 25px;
+    height: 25px;
+}
+
+.wifi-bar-3 {
+    width: 40px;
+    height: 40px;
+}
+
+.wifi-bar-4 {
+    width: 55px;
+    height: 55px;
+}
+
+/* Logika pewarnaan baru, sekarang hanya mengubah border-color */
+.wifi-no-signal .wifi-bar {
+    border-color: #ffffff;
+}
+
+.wifi-poor .wifi-bar-1 {
+    border-color: #F44336;
+}
+
+.wifi-fair .wifi-bar-1,
+.wifi-fair .wifi-bar-2 {
+    border-color: #FF9800;
+}
+
+.wifi-good .wifi-bar-1,
+.wifi-good .wifi-bar-2,
+.wifi-good .wifi-bar-3 {
+    border-color: #f3e307;
+}
+
+.wifi-excellent .wifi-bar-1,
+.wifi-excellent .wifi-bar-2,
+.wifi-excellent .wifi-bar-3,
+.wifi-excellent .wifi-bar-4 {
+    border-color: #4CAF50;
+}
+
+.custom-max {
+    max-width: 20px;
+    margin-inline: auto;
+}
+
+.cam-fixed {
+    position: fixed;
+    top: 60px;
+    left: 15px;
+    z-index: 1000;
+    width: 400px;
+    height: 200px;
+    /* keeps shape */
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
+    background: #111;
+    /* placeholder while loading */
+}
+
+
+/* ============================================================================ */
+
+.container-textku2 {
+    position: fixed;
+    top: 190px;
+    right: 500px;
+    z-index: 1000;
+}
+
+.battery-container2 {
+    position: fixed;
+    top: 200px;
+    right: 15px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 25px;
+    /* 75% dari 25px */
+    border-radius: 25px;
+    /* 75% dari 25px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    /* 75% dari 20px */
+}
+
+.battery-info2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.battery-icon2 {
+    width: 60px;
+    /* 75% dari 120px */
+    height: 87px;
+    /* 75% dari 250px */
+    border: 5px solid #333;
+    /* 75% dari 6px */
+    border-radius: 19px;
+    /* 75% dari 25px */
+    position: relative;
+    background: #f5f5f5;
+}
+
+.battery-tip2 {
+    width: 25px;
+    /* 75% dari 60px */
+    height: 15px;
+    /* 75% dari 20px */
+    background: #fff;
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    /* 75% dari -24px */
+    transform: translateX(-50%);
+    border-radius: 6px 6px 0 0;
+    /* 75% dari 8px */
+}
+
+.battery-level2 {
+    height: 0%;
+    width: 100%;
+    border-radius: 11px;
+    /* 75% dari 15px */
+    transition: height 0.8s ease, background-color 0.8s ease;
+    position: absolute;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.battery-level::before2 {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent);
+    animation: batteryShine 2s infinite;
+}
+
+@keyframes batteryShine2 {
+    0% {
+        top: -100%;
+    }
+
+    100% {
+        top: 100%;
+    }
+}
+
+.battery-percentage2 {
+    color: #fff;
+    font-size: 36px;
+    /* 75% dari 48px */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    /* 75% dari 10px */
+}
+
+/* Battery level colors */
+.battery-high2 {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+}
+
+.battery-medium2 {
+    background: linear-gradient(45deg, #FF9800, #FFC107);
+}
+
+.battery-low2 {
+    background: linear-gradient(45deg, #F44336, #E91E63);
+    animation: batteryBlink 1s infinite alternate;
+}
+
+.battery-critical2 {
+    background: linear-gradient(45deg, #B71C1C, #F44336);
+    animation: batteryBlink 0.5s infinite alternate;
+}
+
+@keyframes batteryBlink2 {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.3;
+    }
+}
+
+/* Charging animation */
+.battery-charging2 {
+    animation: batteryPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes batteryPulse2 {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Lightning bolt for charging */
+.charging-bolt2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFD700;
+    font-size: 36px;
+    /* 75% dari 48px */
+    display: none;
+    animation: boltFlash 0.8s infinite alternate;
+}
+
+@keyframes boltFlash2 {
+    0% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.battery-status2 {
+    color: #fff;
+    font-size: 1px;
+    /* 75% dari 18px */
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* LAP Counter Widget */
+.lap-container2 {
+    position: fixed;
+    top: 200px;
+    right: 205px;
+    /* 75% dari 100px */
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 17px;
+    /* 75% dari 25px */
+    border-radius: 17px;
+    /* 75% dari 25px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 113px;
+    /* 75% dari 150px */
+}
+
+.lap-label2 {
+    color: #fff;
+    font-size: 1.20rem;
+    /* 1.5x dari 1.75rem */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    /* 75% dari 10px */
+}
+
+.lap-counter2 {
+    color: #fff;
+    font-size: 2.9rem;
+    /* 75% dari 9rem */
+    font-weight: bold;
+    text-align: center;
+}
+
+/* WiFi Signal Widget */
+.wifi-container2 {
+    position: fixed;
+    top: 200px;
+    right: 325px;
+    /* 75% dari 380px */
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    /* 75% dari 20px */
+    border-radius: 20px;
+    /* 75% dari 20px */
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    /* 75% dari 120px */
+    transform: scale(1.0);
+    transform-origin: top right;
+
+}
+
+.wifi-label2 {
+    color: #fff;
+    font-size: 1px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.wifi-bars2 {
+    position: relative;
+    /* Lebarkan kontainer agar semua busur muat */
+    width: 70px;
+    /* Diperbesar dari 60px */
+    height: 30px;
+    /* Diperbesar dari 40px */
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.wifi-bar2 {
+    position: absolute;
+    /* Sesuaikan posisi vertikal agar busur tidak terpotong di bagian bawah */
+    bottom: -10px;
+    /* Geser ke bawah 10px */
+    border-radius: 50%;
+    border: 4px solid #fff;
+    clip-path: inset(0 0 50% 0);
+}
+
+/* Ukuran berbeda untuk setiap busur agar bertingkat */
+.wifi-bar-12 {
+    width: 10px;
+    height: 10px;
+}
+
+.wifi-bar-22 {
+    width: 25px;
+    height: 25px;
+}
+
+.wifi-bar-32 {
+    width: 40px;
+    height: 40px;
+}
+
+.wifi-bar-42 {
+    width: 55px;
+    height: 55px;
+}
+
+/* Logika pewarnaan baru, sekarang hanya mengubah border-color */
+.wifi-no-signal2 .wifi-bar2 {
+    border-color: #ffffff;
+}
+
+.wifi-poor2 .wifi-bar-12 {
+    border-color: #F44336;
+}
+
+.wifi-fair2 .wifi-bar-12,
+.wifi-fair2 .wifi-bar-22 {
+    border-color: #FF9800;
+}
+
+.wifi-good2 .wifi-bar-12,
+.wifi-good2 .wifi-bar-22,
+.wifi-good2 .wifi-bar-32 {
+    border-color: #f3e307;
+}
+
+.wifi-excellent2 .wifi-bar-12,
+.wifi-excellent2 .wifi-bar-22,
+.wifi-excellent2 .wifi-bar-32,
+.wifi-excellent2 .wifi-bar-42 {
+    border-color: #4CAF50;
+}
+
+.custom-max2 {
+    max-width: 20px;
+    margin-inline: auto;
+}
+
+.cam-fixed2 {
+    position: fixed;
+    top: 60px;
+    left: 430px;
+    z-index: 1000;
+    width: 400px;
+    height: 200px;
+    /* keeps shape */
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
+    background: #111;
+    /* placeholder while loading */
+}

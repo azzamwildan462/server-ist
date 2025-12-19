@@ -150,19 +150,9 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            # rosapi_node,
             ui_server,
             rosbridge_server, 
-
-            # telemetry,
-
-            # master,
-
-            # keyboard_input,
-
-            # wifi_control,
-            # camproxy,
-            udp2roslib,
-            rtsp2mjpeg,
+            # udp2roslib,
+            # rtsp2mjpeg,
         ]
     )

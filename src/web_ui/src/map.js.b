@@ -574,66 +574,6 @@ function updateBatteryAnimation(socValue, isCharging = false) {
         }
     });
 }
-function updateBatteryAnimation2(socValue, isCharging = false) {
-    const batteryLevel = document.getElementById('battery-level2');
-    const batteryPercentage = document.getElementById('battery-percentage2');
-    const batteryStatus = document.getElementById('battery-status2');
-    const batteryIcon = document.getElementById('battery-icon2');
-    const chargingBolt = document.getElementById('charging-bolt2');
-
-    // Update percentage text
-    batteryPercentage.textContent = `${socValue}%`;
-
-    // Update battery level HEIGHT (untuk vertikal)
-    batteryLevel.style.height = `${socValue}%`;
-
-    // Remove all battery classes
-    batteryLevel.classList.remove('battery-high', 'battery-medium', 'battery-low', 'battery-critical');
-    batteryIcon.classList.remove('battery-charging');
-
-    // Add appropriate color class based on SOC
-    if (socValue >= 75) {
-        batteryLevel.classList.add('battery-high');
-        batteryStatus.textContent = 'Excellent';
-    } else if (socValue > 40) {
-        batteryLevel.classList.add('battery-high');
-        batteryStatus.textContent = 'Good';
-    } else if (socValue <= 40 && socValue > 30) {
-        batteryLevel.classList.add('battery-medium');
-        batteryStatus.textContent = 'Low';
-    } else if (socValue <= 30 && socValue > 0) {
-        batteryLevel.classList.add('battery-low');
-        batteryStatus.textContent = 'Critical';
-    }
-
-    // Handle charging animation
-    if (isCharging) {
-        batteryIcon.classList.add('battery-charging');
-        chargingBolt.style.display = 'block';
-        batteryStatus.textContent = 'Charging';
-    } else {
-        chargingBolt.style.display = 'none';
-    }
-
-    // Animate battery level change (HEIGHT untuk vertikal)
-    anime({
-        targets: batteryLevel,
-        height: `${socValue}%`,
-        duration: 1000,
-        easing: 'easeOutQuart'
-    });
-
-    // Animate percentage number
-    anime({
-        targets: { value: parseInt(batteryPercentage.textContent) || 0 },
-        value: socValue,
-        duration: 1000,
-        easing: 'easeOutQuart',
-        update: function (anim) {
-            batteryPercentage.textContent = `${Math.round(anim.animatables[0].target.value)}%`;
-        }
-    });
-}
 
 // Add disconnection handler to reset battery
 function resetBatteryAnimation() {
@@ -691,56 +631,7 @@ function updateWiFiWidget(latency) {
             }
         }
     }
-}
 
-function updateWiFiWidget2(latency) {
-    const wifiStatus = document.getElementById('wifi-status2');
-    const wifiContainer = document.getElementById('wifi-container2');
-    let signalStrength = 0;
-    let statusClass = '';
-
-    // Calculate signal strength based on latency
-    if (latency < 50) {
-        signalStrength = 4; // Excellent
-        statusClass = 'wifi-excellent2';
-        wifiStatus.textContent = `${latency}ms`;
-        wifiStatus.style.color = 'white';
-    } else if (latency < 100) {
-        signalStrength = 3; // Good
-        statusClass = 'wifi-good2';
-        wifiStatus.textContent = `${latency}ms`;
-        wifiStatus.style.color = 'white';
-    } else if (latency < 200) {
-        signalStrength = 2; // Fair
-        statusClass = 'wifi-fair2';
-        wifiStatus.textContent = `${latency}ms`;
-        wifiStatus.style.color = 'white';
-    } else if (latency < 500) {
-        signalStrength = 1; // Poor
-        statusClass = 'wifi-poor2';
-        wifiStatus.textContent = `${latency}ms`;
-        wifiStatus.style.color = 'white';
-    } else {
-        signalStrength = 0; // No signal
-        statusClass = 'wifi-no-signal2';
-        wifiStatus.textContent = 'No Signal';
-        wifiStatus.style.color = 'red';
-    }
-
-    // Remove all WiFi classes and add new one
-    wifiContainer.className = 'wifi-container2 ' + statusClass;
-
-    // Update individual bars
-    for (let i = 1; i <= 4; i++) {
-        const bar = document.getElementById(`wifi-bar-${i}2`);
-        if (bar) {
-            if (i <= signalStrength) {
-                bar.style.opacity = '1';
-            } else {
-                bar.style.opacity = '0.3';
-            }
-        }
-    }
 }
 // ...existing code...
 
@@ -764,13 +655,6 @@ const counter_lap = document.getElementById('counter-lap');
 const label_lap = document.getElementById('label-lap');
 let cam_main = document.getElementById('cam-main');
 let towing_id = document.getElementById('towing-id');
-
-const status_emergency2 = document.getElementById('status-emergency2');
-const terminal_terakhir2 = document.getElementById('terminal-terakhir2');
-const counter_lap2 = document.getElementById('counter-lap2');
-const label_lap2 = document.getElementById('label-lap2');
-let cam_main2 = document.getElementById('cam-main2');
-let towing_id2 = document.getElementById('towing-id2');
 
 let isTryingToConnect = false;
 
@@ -967,7 +851,6 @@ function checkTerminalStatus(terminal) {
     else if (terminal == 43 || terminal == 48) {
         terminalStatus = "Terminal Terakhir: Jalur 2 Tikungan Jembatan Penyebrangan (Pulang)";
     }
-
     return terminalStatus;
 }
 
@@ -1041,7 +924,6 @@ setInterval(() => {
     // console.log("Time: ", time_diff);
     if (!ros.isConnected) {
         status_emergency.innerHTML = "Towing Disconnected";
-        status_emergency2.innerHTML = "Towing Disconnected";
         // Log reconnection attempt only once every 30 seconds to avoid spam
         const now = Date.now();
         if (now - lastReconnectAttempt > 50000) {
@@ -1079,37 +961,21 @@ function reconnectImg(elemOrId, baseUrl) {
     fresh.src = url;
 }
 
-let last_time_cam_main_normal = 0;
-setInterval(() => {
-    let time_now = Date.now();
-    let time_diff = time_now - last_time_cam_main_normal;
-    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
-    if (Math.floor(time_diff / 1000) > 10) {
-        console.log("Camera seems disconnected, refreshing...");
-        reconnectImg(cam_main, 'http://' + ip_server + ':7892/cam1.mjpeg');
-    }
-}, 3000);
+// let last_time_camera_normal = 0;
+// setInterval(() => {
+//     let time_now = Date.now();
+//     let time_diff = time_now - last_time_camera_normal;
+//     console.log("Camera time diff: ", Math.floor(time_diff / 1000));
+//     if (Math.floor(time_diff / 1000) > 10) {
+//         console.log("Camera seems disconnected, refreshing...");
+//         reconnectImg(cam_main, cam_main.src);
+//     }
+// }, 3000);
 
-cam_main.onload = function () {
-    last_time_cam_main_normal = Date.now();
-    // console.log('Camera image loaded successfully.');
-};
-
-let last_time_cam_main2_normal = 0;
-setInterval(() => {
-    let time_now = Date.now();
-    let time_diff = time_now - last_time_cam_main2_normal;
-    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
-    if (Math.floor(time_diff / 1000) > 20) {
-        console.log("Camera seems disconnected, refreshing...");
-        reconnectImg(cam_main2, 'http://' + ip_server + ':7892/cam2.mjpeg');
-    }
-}, 3000);
-
-cam_main2.onload = function () {
-    last_time_cam_main2_normal = Date.now();
-    // console.log('Camera image loaded successfully.');
-};
+// cam_main.onload = function () {
+//     last_time_camera_normal = Date.now();
+//     console.log('Camera image loaded successfully.');
+// };
 
 // CAPEKKKKK, NEXT menambahkan terminal terakhir
 ros.on("connection", function () {
@@ -1226,8 +1092,8 @@ function destroy_ros_all() {
     isTryingToConnect = false;
     console.log("Connection to WebSocket server closed.");
 
-    // resetBatteryAnimation(0, false);
-    // updateWiFiWidget(9999);
+    resetBatteryAnimation(0, false);
+    updateWiFiWidget(9999);
 }
 
 ros.on("error", function (error) {
@@ -1238,26 +1104,8 @@ ros.on("close", function () {
     destroy_ros_all();
 });
 
-
-// let currentStatus = null;
-// let lastLoggedStatus = null;
-// let lastTerminalStatus = null;
-// let lastRosStatus = null;
-// let currentLagMs = 0;
-// let currentSocBat = 0;
-
-// let currentSOC = 0;
-// let currentLap = 0;
-// let currentX = 0.0;
-// let currentY = 0.0;
-// let currentTheta = 0.0;
-
 setInterval(() => {
-    if (!ros.isConnected) {
-        return;
-    }
-    const threshold_lag_ms = 2000;
-
+    // Change data for display based on priority
     let isT1Priority = false;
     let isT2Priority = false;
     let isT3Priority = false;
@@ -1267,14 +1115,45 @@ setInterval(() => {
     let terminalStatusT1 = null;
     let terminalStatusT2 = null;
     let terminalStatusT3 = null;
+    let string_camera = null;
+    let current_id = null;
 
     ({ newStatus: newStatusT1, isPriority: isT1Priority } = checkPriorityStatus(t1_status_emergency_packed));
     ({ newStatus: newStatusT2, isPriority: isT2Priority } = checkPriorityStatus(t2_status_emergency_packed));
     ({ newStatus: newStatusT3, isPriority: isT3Priority } = checkPriorityStatus(t3_status_emergency_packed));
 
+    // console.log("T1 Priority:", isT1Priority, "Status:", newStatusT1);
+    // console.log("T1 SoC:", t1_battery_soc_packed, "Lag:", t1_lag_ms_packed);
+    // console.log("T1 Terminal:", t1_terminal_terakhir_packed, "Mode:", t1_status_emergency_packed);
+    // console.log("T1 Pose:", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed);
+    // console.log("T2 Priority:", isT2Priority, "Status:", newStatusT2);
+    // console.log("T3 Priority:", isT3Priority, "Status:", newStatusT3);
+
     terminalStatusT1 = checkTerminalStatus(t1_terminal_terakhir_packed);
     terminalStatusT2 = checkTerminalStatus(t2_terminal_terakhir_packed);
     terminalStatusT3 = checkTerminalStatus(t3_terminal_terakhir_packed);
+
+    let countPriority = 0;
+    if (isT1Priority) countPriority++;
+    if (isT2Priority) countPriority++;
+    if (isT3Priority) countPriority++;
+
+    let listPriority = [];
+    if (isT1Priority) listPriority.push(1);
+    if (isT2Priority) listPriority.push(2);
+    if (isT3Priority) listPriority.push(3);
+
+    const threshold_lag_ms = 2000;
+
+    let countActive = 0;
+    if (t1_lag_ms_packed < threshold_lag_ms) countActive++;
+    if (t2_lag_ms_packed < threshold_lag_ms) countActive++;
+    if (t3_lag_ms_packed < threshold_lag_ms) countActive++;
+
+    let listActive = [];
+    if (t1_lag_ms_packed < threshold_lag_ms) listActive.push(1);
+    if (t2_lag_ms_packed < threshold_lag_ms) listActive.push(2);
+    if (t3_lag_ms_packed < threshold_lag_ms) listActive.push(3);
 
     if (t1_lag_ms_packed < threshold_lag_ms) {
         addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
@@ -1292,258 +1171,162 @@ setInterval(() => {
         newStatusT2 = "Towing Disconnected";
         t2_battery_soc_packed = 0;
     }
-    // if (t3_lag_ms_packed < threshold_lag_ms) {
-    //     addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
-    // } else {
-    //     addRobotImageWithToribe("T3", 99999, 99999, 0, 4.05, 2.0);
-    //     // console.log("T3 Disconnected due to lag:", t3_lag_ms_packed);
-    //     newStatusT3 = "Towing Disconnected";
-    //     t3_battery_soc_packed = 0;
-    // }
+    if (t3_lag_ms_packed < threshold_lag_ms) {
+        addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
+    } else {
+        addRobotImageWithToribe("T3", 99999, 99999, 0, 4.05, 2.0);
+        // console.log("T3 Disconnected due to lag:", t3_lag_ms_packed);
+        newStatusT3 = "Towing Disconnected";
+        t3_battery_soc_packed = 0;
+    }
 
-    // Set T1
-    const formattedLap = t1_lap_sum_packed.toString().padStart(2, '0');
+    // console.log("Count Active:", countActive);
+    // console.log("Count Priority:", countPriority);
+
+    if (countPriority === 0) {
+        if (cycleNormal > countActive - 1) cycleNormal = 0;
+        console.log("Normal Cycle", "T=", listActive[cycleNormal]);
+
+        if (listActive[cycleNormal] === 1) {
+            currentLap = t1_lap_sum_packed;
+            currentStatus = newStatusT1;
+            lastTerminalStatus = terminalStatusT1;
+            currentLagMs = t1_lag_ms_packed;
+            currentSocBat = t1_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
+            current_id = 1;
+        } else if (listActive[cycleNormal] === 2) {
+            currentLap = t2_lap_sum_packed;
+            currentStatus = newStatusT2;
+            lastTerminalStatus = terminalStatusT2;
+            currentLagMs = t2_lag_ms_packed;
+            currentSocBat = t2_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
+            current_id = 2;
+        } else if (listActive[cycleNormal] === 3) {
+            currentLap = t3_lap_sum_packed;
+            currentStatus = newStatusT3;
+            lastTerminalStatus = terminalStatusT3;
+            currentLagMs = t3_lag_ms_packed;
+            currentSocBat = t3_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
+            current_id = 3;
+        }
+        if (counter_cycle_change++ > 30) {
+            cycleNormal++;
+            counter_cycle_change = 0;
+        }
+    } else {
+        if (cycleEmergency > countPriority - 1) cycleEmergency = 0;
+        console.log("Emergency Cycle", "T=", listPriority[cycleEmergency]);
+
+        if (listPriority[cycleEmergency] === 1) {
+            currentLap = t1_lap_sum_packed;
+            currentStatus = newStatusT1;
+            lastTerminalStatus = terminalStatusT1;
+            currentLagMs = t1_lag_ms_packed;
+            currentSocBat = t1_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
+            current_id = 1;
+        } else if (listPriority[cycleEmergency] === 2) {
+            currentLap = t2_lap_sum_packed;
+            currentStatus = newStatusT2;
+            lastTerminalStatus = terminalStatusT2;
+            currentLagMs = t2_lag_ms_packed;
+            currentSocBat = t2_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
+            current_id = 2;
+        } else if (listPriority[cycleEmergency] === 3) {
+            currentLap = t3_lap_sum_packed;
+            currentStatus = newStatusT3;
+            lastTerminalStatus = terminalStatusT3;
+            currentLagMs = t3_lag_ms_packed;
+            currentSocBat = t3_battery_soc_packed;
+            string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
+            current_id = 3;
+        }
+        if (counter_cycle_change++ > 30) {
+            cycleEmergency++;
+            counter_cycle_change = 0;
+        }
+    }
+
+    // ==================================
+    //          ALARM BATERAI
+    // ==================================
+    if (currentSocBat < 5) {
+        if (test_audio_play == 0) {
+            if (!alarm_30.paused) {
+                alarm_30.pause();
+                alarm_30.currentTime = 0;
+            }
+        }
+    } else if (currentSocBat < 30) {
+        if (alarm_30.paused) {
+            alarm_30.play();
+        }
+    } else if (currentSocBat < 40) {
+        if (alarm_30.paused) {
+            alarm_30.play();
+        }
+    } else {
+        if (test_audio_play == 0) {
+            if (!alarm_30.paused) {
+                alarm_30.pause();
+                alarm_30.currentTime = 0;
+            }
+        }
+    }
+
+    // ==================================
+    //          ALARM WARNING
+    // ==================================
+    if (currentStatus === "Towing Mode Manual" || currentStatus === "Towing Normal") {
+        if (!alarm.paused) {
+            alarm.pause();
+            alarm.currentTime = 0;
+        }
+    } else if (currentStatus !== "WARNING: Lidar Mendeteksi Objek" && currentStatus !== "WARNING: Kamera Mendeteksi Objek" && currentStatus !== "Towing Disconnected" && currentStatus !== "WARNING: Terlalu Dekat Teman") {
+        if (alarm.paused) {
+            alarm.play();
+        }
+    }
+
+    const formattedLap = currentLap.toString().padStart(2, '0');
     counter_lap.innerHTML = formattedLap;
     label_lap.style.color = 'white';
     counter_lap.style.color = 'white';
-    status_emergency.innerHTML = newStatusT1;
-    terminal_terakhir.innerHTML = terminalStatusT1;
-    towing_id.innerHTML = "Towing: " + "T1";
-    towing_id.style.color = '#FF0000'; // Merah
-    updateWiFiWidget(t1_lag_ms_packed);
-    updateBatteryAnimation(t1_battery_soc_packed, false);
+    status_emergency.innerHTML = currentStatus;
+    terminal_terakhir.innerHTML = lastTerminalStatus;
+    if (current_id === null) {
+        towing_id.innerHTML = "Towing: " + "T-";
+        towing_id.style.color = '#FFFFFF'; // Putih
+    } else {
+        towing_id.innerHTML = "Towing: " + "T" + current_id;
 
-    // Set T2
-    const formattedLap2 = t2_lap_sum_packed.toString().padStart(2, '0');
-    counter_lap2.innerHTML = formattedLap2;
-    label_lap2.style.color = 'white';
-    counter_lap2.style.color = 'white';
-    status_emergency2.innerHTML = newStatusT2;
-    terminal_terakhir2.innerHTML = terminalStatusT2;
-    towing_id2.innerHTML = "Towing: " + "T2";
-    towing_id2.style.color = '#00BFFF'; // Merah
-    updateWiFiWidget2(t2_lag_ms_packed);
-    updateBatteryAnimation2(t2_battery_soc_packed, false);
+        if (current_id === 1) {
+            towing_id.style.color = '#FF0000'; // Merah
+        } else if (current_id === 2) {
+            towing_id.style.color = '#00BFFF'; // Biru
+        } else if (current_id === 3) {
+            towing_id.style.color = '#00FF00'; // Hijau
+        }
+    }
+
+    updateWiFiWidget(currentLagMs);
+    updateBatteryAnimation(currentSocBat, false);
+
+    if (prev_camera_string !== string_camera) {
+        console.log("Camera changed to:", string_camera);
+        cam_main.src = "";
+        cam_main.removeAttribute('src');      // beberapa browser perlu ini
+        setTimeout(() => {
+            // console.log("qweqwew");
+            cam_main.src = string_camera;
+        }, 1000);
+    }
+
+    prev_camera_string = string_camera;
+    // console.log("Current Status:", currentStatus, "Current Lap:", currentLap, "T:", cycleNormal + 1);
 
 }, 1000);
-
-
-// setInterval(() => {
-//     // Change data for display based on priority
-//     let isT1Priority = false;
-//     let isT2Priority = false;
-//     let isT3Priority = false;
-//     let newStatusT1 = null;
-//     let newStatusT2 = null;
-//     let newStatusT3 = null;
-//     let terminalStatusT1 = null;
-//     let terminalStatusT2 = null;
-//     let terminalStatusT3 = null;
-//     let string_camera = null;
-//     let current_id = null;
-
-//     ({ newStatus: newStatusT1, isPriority: isT1Priority } = checkPriorityStatus(t1_status_emergency_packed));
-//     ({ newStatus: newStatusT2, isPriority: isT2Priority } = checkPriorityStatus(t2_status_emergency_packed));
-//     ({ newStatus: newStatusT3, isPriority: isT3Priority } = checkPriorityStatus(t3_status_emergency_packed));
-
-//     terminalStatusT1 = checkTerminalStatus(t1_terminal_terakhir_packed);
-//     terminalStatusT2 = checkTerminalStatus(t2_terminal_terakhir_packed);
-//     terminalStatusT3 = checkTerminalStatus(t3_terminal_terakhir_packed);
-
-//     let countPriority = 0;
-//     if (isT1Priority) countPriority++;
-//     if (isT2Priority) countPriority++;
-//     if (isT3Priority) countPriority++;
-
-//     let listPriority = [];
-//     if (isT1Priority) listPriority.push(1);
-//     if (isT2Priority) listPriority.push(2);
-//     if (isT3Priority) listPriority.push(3);
-
-//     const threshold_lag_ms = 2000;
-
-//     let countActive = 0;
-//     if (t1_lag_ms_packed < threshold_lag_ms) countActive++;
-//     if (t2_lag_ms_packed < threshold_lag_ms) countActive++;
-//     if (t3_lag_ms_packed < threshold_lag_ms) countActive++;
-
-//     let listActive = [];
-//     if (t1_lag_ms_packed < threshold_lag_ms) listActive.push(1);
-//     if (t2_lag_ms_packed < threshold_lag_ms) listActive.push(2);
-//     if (t3_lag_ms_packed < threshold_lag_ms) listActive.push(3);
-
-//     if (t1_lag_ms_packed < threshold_lag_ms) {
-//         addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
-//     } else {
-//         addRobotImageWithToribe("T1", 99999, 99999, 0, 4.05, 2.0);
-//         // console.log("T1 Disconnected due to lag:", t1_lag_ms_packed);
-//         newStatusT1 = "Towing Disconnected";
-//         t1_battery_soc_packed = 0;
-//     }
-//     if (t2_lag_ms_packed < threshold_lag_ms) {
-//         addRobotImageWithToribe("T2", t2_pose_x_packed, t2_pose_y_packed, t2_pose_theta_packed, 4.05, 2.0);
-//     } else {
-//         addRobotImageWithToribe("T2", 99999, 99999, 0, 4.05, 2.0);
-//         // console.log("T2 Disconnected due to lag:", t2_lag_ms_packed);
-//         newStatusT2 = "Towing Disconnected";
-//         t2_battery_soc_packed = 0;
-//     }
-//     if (t3_lag_ms_packed < threshold_lag_ms) {
-//         addRobotImageWithToribe("T3", t3_pose_x_packed, t3_pose_y_packed, t3_pose_theta_packed, 4.05, 2.0);
-//     } else {
-//         addRobotImageWithToribe("T3", 99999, 99999, 0, 4.05, 2.0);
-//         // console.log("T3 Disconnected due to lag:", t3_lag_ms_packed);
-//         newStatusT3 = "Towing Disconnected";
-//         t3_battery_soc_packed = 0;
-//     }
-
-//     // console.log("Count Active:", countActive);
-//     // console.log("Count Priority:", countPriority);
-
-//     if (countPriority === 0) {
-//         if (cycleNormal > countActive - 1) cycleNormal = 0;
-//         console.log("Normal Cycle", "T=", listActive[cycleNormal]);
-
-//         if (listActive[cycleNormal] === 1) {
-//             currentLap = t1_lap_sum_packed;
-//             currentStatus = newStatusT1;
-//             lastTerminalStatus = terminalStatusT1;
-//             currentLagMs = t1_lag_ms_packed;
-//             currentSocBat = t1_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
-//             current_id = 1;
-//         } else if (listActive[cycleNormal] === 2) {
-//             currentLap = t2_lap_sum_packed;
-//             currentStatus = newStatusT2;
-//             lastTerminalStatus = terminalStatusT2;
-//             currentLagMs = t2_lag_ms_packed;
-//             currentSocBat = t2_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
-//             current_id = 2;
-//         } else if (listActive[cycleNormal] === 3) {
-//             currentLap = t3_lap_sum_packed;
-//             currentStatus = newStatusT3;
-//             lastTerminalStatus = terminalStatusT3;
-//             currentLagMs = t3_lag_ms_packed;
-//             currentSocBat = t3_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
-//             current_id = 3;
-//         }
-//         if (counter_cycle_change++ > 10) {
-//             cycleNormal++;
-//             counter_cycle_change = 0;
-//         }
-//     } else {
-//         if (cycleEmergency > countPriority - 1) cycleEmergency = 0;
-//         console.log("Emergency Cycle", "T=", listPriority[cycleEmergency]);
-
-//         if (listPriority[cycleEmergency] === 1) {
-//             currentLap = t1_lap_sum_packed;
-//             currentStatus = newStatusT1;
-//             lastTerminalStatus = terminalStatusT1;
-//             currentLagMs = t1_lag_ms_packed;
-//             currentSocBat = t1_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam1.mjpeg';
-//             current_id = 1;
-//         } else if (listPriority[cycleEmergency] === 2) {
-//             currentLap = t2_lap_sum_packed;
-//             currentStatus = newStatusT2;
-//             lastTerminalStatus = terminalStatusT2;
-//             currentLagMs = t2_lag_ms_packed;
-//             currentSocBat = t2_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam2.mjpeg';
-//             current_id = 2;
-//         } else if (listPriority[cycleEmergency] === 3) {
-//             currentLap = t3_lap_sum_packed;
-//             currentStatus = newStatusT3;
-//             lastTerminalStatus = terminalStatusT3;
-//             currentLagMs = t3_lag_ms_packed;
-//             currentSocBat = t3_battery_soc_packed;
-//             string_camera = 'http://' + ip_server + ':7892/cam3.mjpeg';
-//             current_id = 3;
-//         }
-//         if (counter_cycle_change++ > 10) {
-//             cycleEmergency++;
-//             counter_cycle_change = 0;
-//         }
-//     }
-
-//     // ==================================
-//     //          ALARM BATERAI
-//     // ==================================
-//     if (currentSocBat < 5) {
-//         if (test_audio_play == 0) {
-//             if (!alarm_30.paused) {
-//                 alarm_30.pause();
-//                 alarm_30.currentTime = 0;
-//             }
-//         }
-//     } else if (currentSocBat < 30) {
-//         if (alarm_30.paused) {
-//             alarm_30.play();
-//         }
-//     } else if (currentSocBat < 40) {
-//         if (alarm_30.paused) {
-//             alarm_30.play();
-//         }
-//     } else {
-//         if (test_audio_play == 0) {
-//             if (!alarm_30.paused) {
-//                 alarm_30.pause();
-//                 alarm_30.currentTime = 0;
-//             }
-//         }
-//     }
-
-//     // ==================================
-//     //          ALARM WARNING
-//     // ==================================
-//     if (currentStatus === "Towing Mode Manual" || currentStatus === "Towing Normal") {
-//         if (!alarm.paused) {
-//             alarm.pause();
-//             alarm.currentTime = 0;
-//         }
-//     } else if (currentStatus !== "WARNING: Lidar Mendeteksi Objek" && currentStatus !== "WARNING: Kamera Mendeteksi Objek" && currentStatus !== "Towing Disconnected" && currentStatus !== "WARNING: Terlalu Dekat Teman") {
-//         if (alarm.paused) {
-//             alarm.play();
-//         }
-//     }
-
-//     const formattedLap = currentLap.toString().padStart(2, '0');
-//     counter_lap.innerHTML = formattedLap;
-//     label_lap.style.color = 'white';
-//     counter_lap.style.color = 'white';
-//     status_emergency.innerHTML = currentStatus;
-//     terminal_terakhir.innerHTML = lastTerminalStatus;
-//     if (current_id === null) {
-//         towing_id.innerHTML = "Towing: " + "T-";
-//         towing_id.style.color = '#FFFFFF'; // Putih
-//     } else {
-//         towing_id.innerHTML = "Towing: " + "T" + current_id;
-
-//         if (current_id === 1) {
-//             towing_id.style.color = '#FF0000'; // Merah
-//         } else if (current_id === 2) {
-//             towing_id.style.color = '#00BFFF'; // Biru
-//         } else if (current_id === 3) {
-//             towing_id.style.color = '#00FF00'; // Hijau
-//         }
-//     }
-
-//     // updateWiFiWidget(currentLagMs);
-//     // updateBatteryAnimation(currentSocBat, false);
-
-//     if (prev_camera_string !== string_camera) {
-//         console.log("Camera changed to:", string_camera);
-//         cam_main.src = "";
-//         cam_main.removeAttribute('src');      // beberapa browser perlu ini
-//         setTimeout(() => {
-//             // console.log("qweqwew");
-//             cam_main.src = string_camera;
-//         }, 1000);
-//     }
-
-//     prev_camera_string = string_camera;
-//     // console.log("Current Status:", currentStatus, "Current Lap:", currentLap, "T:", cycleNormal + 1);
-
-// }, 1000);
