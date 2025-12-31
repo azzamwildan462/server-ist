@@ -374,14 +374,14 @@ class Rtsp2MjpegNode(Node):
         self.declare_parameter(
             "paths",
             [
-                "Streaming/channels/101",
-                "Streaming/channels/101",
-                "Streaming/channels/102",
+                "streaming/channels/101",
+                "streaming/channels/101",
+                "streaming/channels/101",
             ],
         )
         self.declare_parameter("ports", [554, 554, 554])
-        self.declare_parameter("usernames", ["admin", "", ""])
-        self.declare_parameter("passwords", ["098POI765uyt", "", ""])
+        self.declare_parameter("usernames", ["admin", "admin", "admin"])
+        self.declare_parameter("passwords", ["098POI765uyt", "098POI765uyt", "098POI765uyt"])
 
         self.declare_parameter(
             "topics",

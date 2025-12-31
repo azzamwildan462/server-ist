@@ -25,8 +25,8 @@
 
         .date-container {
             position: fixed;
-            top: 10px;
-            right: 15px;
+            bottom: 15px;
+            left: 15px;
             /* Sesuaikan posisi ini agar tidak tumpang tindih */
             z-index: 1000;
             background: rgba(0, 0, 0, 0.8);
@@ -40,8 +40,8 @@
 
         .time-container {
             position: fixed;
-            top: 10px;
-            right: 312px;
+            bottom: 15px;
+            left: 400px;
             z-index: 1000;
             background: rgba(0, 0, 0, 0.8);
             padding: 10px 20px;
@@ -54,7 +54,7 @@
 
         .date-text {
             color: #fff;
-            font-size: 1rem;
+            font-size: 1.7rem;
             /* Ukuran font 16px */
             font-weight: bold;
             text-align: center;
@@ -111,7 +111,7 @@
 
     <!-- LAP Counter Widget -->
     <div class="lap-container">
-        <div class="lap-label" id="label-lap">LAP</div>
+        <div class="lap-label" id="label-lap">LAP T1</div>
         <div class="lap-counter" id="counter-lap">00</div>
     </div>
 
@@ -127,7 +127,7 @@
         <div class="wifi-status" id="wifi-status">--ms</div>
     </div>
 
-    <img id="cam-main" class="cam-fixed" src="" />
+    <img id="cam-main" class="cam-fixed" src="" caption="Camera 1" />
 
     <!-- Battery Animation Widget -->
     <div class="battery-container2">
@@ -144,7 +144,7 @@
 
     <!-- LAP Counter Widget -->
     <div class="lap-container2">
-        <div class="lap-label2" id="label-lap2">LAP</div>
+        <div class="lap-label2" id="label-lap2">LAP T2</div>
         <div class="lap-counter2" id="counter-lap2">00</div>
     </div>
 
@@ -161,10 +161,10 @@
     </div>
 
     <!-- Camera Feed -->
-    <img id="cam-main2" class="cam-fixed2" src="" />
+    <img id="cam-main2" class="cam-fixed2" src="" caption="Camera 2" />
 
     <br>
-
+    <!-- 
     <div class="cam-label">
         <div class="has-text-weight-bold is-size-4">
             T1
@@ -175,7 +175,7 @@
         <div class="has-text-weight-bold is-size-4">
             T2
         </div>
-    </div>
+    </div> -->
 
     <div class="container is-fluid">
         <div class="container-textku">

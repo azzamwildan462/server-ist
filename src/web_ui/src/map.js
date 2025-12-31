@@ -37,7 +37,7 @@ let wtf_skala = 10;
 var ip_server = window.location.hostname; // IP towing robot
 // var ip_server = "127.0.0.1"; // IP towing robot
 // var ip_server = "192.168.24.59"; // IP towing robot
-// var ip_server = "10.181.129.177";
+// var ip_server = "10.20.30.183";
 let last_time_connect = new Date();
 
 // Create a Konva Stage
@@ -882,15 +882,15 @@ function checkPriorityStatus(status) {
         newStatus = "WARNING: Kamera Mendeteksi Objek";
     }
     else {
-        newStatus = "Towing Normal";
+        newStatus = "Towing Normal (AUTO)";
     }
 
     const isPriority = newStatus !== "Towing Normal" && newStatus !== "Towing Mode Manual";
     return { newStatus, isPriority };
 }
 
-function checkTerminalStatus(terminal) {
-    let terminalStatus = null;
+function checkTerminalStatus(terminal, last) {
+    let terminalStatus = last;
 
     // 0 Berangkat: Area jibcrane IST 
     // 26 Berangkat: Tikungan samping lab 
@@ -1079,37 +1079,42 @@ function reconnectImg(elemOrId, baseUrl) {
     fresh.src = url;
 }
 
-let last_time_cam_main_normal = 0;
+let last_time_cam_main_normal = Date.now();
+cam_main.src = 'http://' + ip_server + ':7892/cam1.mjpeg';
 setInterval(() => {
     let time_now = Date.now();
     let time_diff = time_now - last_time_cam_main_normal;
-    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
-    if (Math.floor(time_diff / 1000) > 10) {
+    // console.log("Camera time diff: ", Math.floor(time_diff / 1000));
+    if (Math.floor(time_diff / 1000) > 60) {
+        last_time_cam_main_normal = Date.now();
         console.log("Camera seems disconnected, refreshing...");
-        reconnectImg(cam_main, 'http://' + ip_server + ':7892/cam1.mjpeg');
+        // reconnectImg(cam_main, 'http://' + ip_server + ':7892/cam1.mjpeg');
+        location.reload();
     }
 }, 3000);
 
-cam_main.onload = function () {
-    last_time_cam_main_normal = Date.now();
-    // console.log('Camera image loaded successfully.');
-};
+// cam_main.onload = function () {
+//     last_time_cam_main_normal = Date.now();
+//     // console.log('Camera image loaded successfully.');
+// };
 
+cam_main2.src = 'http://' + ip_server + ':7892/cam2.mjpeg';
 let last_time_cam_main2_normal = 0;
 setInterval(() => {
     let time_now = Date.now();
     let time_diff = time_now - last_time_cam_main2_normal;
-    console.log("Camera time diff: ", Math.floor(time_diff / 1000));
-    if (Math.floor(time_diff / 1000) > 20) {
+    // console.log("Camera time diff: ", Math.floor(time_diff / 1000));
+    if (Math.floor(time_diff / 1000) > 60) {
+        last_time_cam_main2_normal = Date.now();
         console.log("Camera seems disconnected, refreshing...");
-        reconnectImg(cam_main2, 'http://' + ip_server + ':7892/cam2.mjpeg');
+        // reconnectImg(cam_main2, 'http://' + ip_server + ':7892/cam2.mjpeg');
     }
 }, 3000);
 
-cam_main2.onload = function () {
-    last_time_cam_main2_normal = Date.now();
-    // console.log('Camera image loaded successfully.');
-};
+// cam_main2.onload = function () {
+//     last_time_cam_main2_normal = Date.now();
+//     // console.log('Camera image loaded successfully.');
+// };
 
 // CAPEKKKKK, NEXT menambahkan terminal terakhir
 ros.on("connection", function () {
@@ -1252,6 +1257,10 @@ ros.on("close", function () {
 // let currentY = 0.0;
 // let currentTheta = 0.0;
 
+
+let terminalStatusT1 = null;
+let terminalStatusT2 = null;
+let terminalStatusT3 = null;
 setInterval(() => {
     if (!ros.isConnected) {
         return;
@@ -1264,17 +1273,18 @@ setInterval(() => {
     let newStatusT1 = null;
     let newStatusT2 = null;
     let newStatusT3 = null;
-    let terminalStatusT1 = null;
-    let terminalStatusT2 = null;
-    let terminalStatusT3 = null;
 
     ({ newStatus: newStatusT1, isPriority: isT1Priority } = checkPriorityStatus(t1_status_emergency_packed));
     ({ newStatus: newStatusT2, isPriority: isT2Priority } = checkPriorityStatus(t2_status_emergency_packed));
     ({ newStatus: newStatusT3, isPriority: isT3Priority } = checkPriorityStatus(t3_status_emergency_packed));
 
-    terminalStatusT1 = checkTerminalStatus(t1_terminal_terakhir_packed);
-    terminalStatusT2 = checkTerminalStatus(t2_terminal_terakhir_packed);
-    terminalStatusT3 = checkTerminalStatus(t3_terminal_terakhir_packed);
+    terminalStatusT1 = checkTerminalStatus(t1_terminal_terakhir_packed, terminalStatusT1);
+    terminalStatusT2 = checkTerminalStatus(t2_terminal_terakhir_packed, terminalStatusT2);
+    terminalStatusT3 = checkTerminalStatus(t3_terminal_terakhir_packed, terminalStatusT3);
+
+    // console.log("Terminal T1:", terminalStatusT1);
+    console.log("Terminal T2:", terminalStatusT2, t2_terminal_terakhir_packed);
+    // console.log("Terminal T3:", terminalStatusT3);
 
     if (t1_lag_ms_packed < threshold_lag_ms) {
         addRobotImageWithToribe("T1", t1_pose_x_packed, t1_pose_y_packed, t1_pose_theta_packed, 4.05, 2.0);
