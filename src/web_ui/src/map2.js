@@ -42,13 +42,32 @@ let last_time_connect = new Date();
 // Create a Konva Stage
 const stage = new Konva.Stage({
     container: 'map',
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: getMapWidth(),
+    height: getMapHeight(),
     // position: {x: 776.1564000000002, y: 132.96359999999993},
     // scale: {x: 0.5499159600000001, y: 0.5499159600000001}
     position: { x: 909.0812167763638, y: 233.76107358727256 },
     scale: { x: 0.8051319570360004, y: 0.8051319570360004 }
 });
+
+function getMapWidth() {
+    if (window.innerWidth <= 480) {
+        return window.innerWidth * 0.98; // 98% untuk extra small
+    } else if (window.innerWidth <= 768) {
+        return window.innerWidth * 0.95; // 95% untuk mobile
+    }
+    return window.innerWidth; // Full width untuk desktop
+}
+
+// Function to get responsive map height
+function getMapHeight() {
+    if (window.innerWidth <= 480) {
+        return 150; // 150px untuk extra small
+    } else if (window.innerWidth <= 768) {
+        return 180; // 180px untuk mobile tablet
+    }
+    return window.innerHeight; // Full height untuk desktop
+}
 
 
 // Create a layer for grid and shapes
@@ -125,15 +144,15 @@ stage.on('contextmenu', (e) => {
 
 // Handle window resizing
 window.addEventListener('resize', () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = getMapWidth();
+    const height = getMapHeight();
 
     stage.width(width);
     stage.height(height);
 
     robotLayer.batchDraw();
     // mapLayer.batchDraw();
-    // waypointsLayer.batchDraw();
+    waypointsLayer.batchDraw();
 });
 
 // ================================================================================================================================

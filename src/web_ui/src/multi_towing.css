@@ -698,3 +698,225 @@
     background: #111;
     /* placeholder while loading */
 }
+
+#map {
+    width: 100%;
+    height: 100vh; /* Default untuk desktop */
+}
+
+/* ============== RESPONSIVE MOBILE ============== */
+@media screen and (max-width: 768px) {
+    
+    /* Hide Date & Time on mobile */
+    .date-container,
+    .time-container {
+        display: none !important;
+    }
+
+    /* Hide navbar burger (3 lines) */
+    .navbar-burger {
+        display: none !important;
+    }
+
+    /* Keep navbar logo visible */
+    .navbar {
+        padding: 0.5rem 1rem !important;
+    }
+
+    /* Mobile row wrapper - Ensure horizontal layout */
+    .mobile-row-widgets {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+        flex-wrap: nowrap !important;
+        padding: 10px 5px !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    /* ROW 1: WiFi1, LAP1, Battery1 - Horizontal layout */
+    .wifi-container {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    .lap-container {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    .battery-container {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    /* ROW 2: Camera 1 - Full width */
+    .cam-fixed {
+        position: static !important;
+        width: 95% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 2/1;
+        margin: 10px auto !important;
+        display: block !important;
+    }
+
+    /* ROW 3: Text 1 - Full width */
+    .container-textku {
+        position: static !important;
+        width: 100% !important;
+        padding: 15px 10px !important;
+        text-align: center !important;
+        display: block !important;
+    }
+
+    /* ROW 4: WiFi2, LAP2, Battery2 - Horizontal layout */
+    .wifi-container2 {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    .lap-container2 {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    .battery-container2 {
+        position: static !important;
+        display: block !important;
+        margin: 0 !important;
+        transform: scale(0.75) !important;
+        transform-origin: bottom center !important;
+        flex: 0 0 auto !important;
+        align-self: flex-end !important;
+    }
+
+    /* ROW 5: Camera 2 */
+    .cam-fixed2 {
+        position: static !important;
+        width: 95% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 2/1;
+        margin: 10px auto !important;
+        display: block !important;
+    }
+
+    /* ROW 6: Text 2 */
+    .container-textku2 {
+        position: static !important;
+        width: 100% !important;
+        padding: 15px 10px !important;
+        text-align: center !important;
+        display: block !important;
+    }
+
+    /* ROW 7: Map */
+    #map {
+        width: 95% !important;
+        height: 180px !important; 
+        margin: 10px auto !important;
+        display: block !important;
+        border-radius: 10px !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    #map canvas {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 180px !important; 
+    }
+
+    .container.is-fluid {
+        padding: 0 10px !important;
+    }
+
+    .center-wrap {
+        max-width: 100% !important;
+        padding-inline: 10px !important;
+    }
+
+    .center-wrap .is-size-4 {
+        font-size: 0.9rem !important;
+    }
+
+    .cam-label,
+    .cam-label2 {
+        display: none !important;
+    }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 480px) {
+    .mobile-row-widgets {
+        gap: 5px !important;
+        padding: 8px 3px !important;
+    }
+
+    .battery-container,
+    .battery-container2,
+    .wifi-container,
+    .wifi-container2,
+    .lap-container,
+    .lap-container2 {
+        transform: scale(0.65) !important;
+        transform-origin: bottom center !important;
+    }
+
+    .center-wrap .is-size-4 {
+        font-size: 0.85rem !important;
+    }
+
+    #map {
+        width: 98% !important;
+        height: 120px !important;
+        margin: 10px auto !important;
+    }
+
+    #map canvas {
+        max-height: 120px !important; 
+    }
+
+
+    .cam-fixed,
+    .cam-fixed2 {
+        width: 98% !important;
+    }
+}
+
+/* Landscape orientation untuk mobile */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    #map {
+        height: 80px !important; 
+    }
+
+    #map canvas {
+        max-height: 80px !important; 
+    }
+}

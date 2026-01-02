@@ -40,16 +40,45 @@ var ip_server = window.location.hostname; // IP towing robot
 // var ip_server = "10.20.30.183";
 let last_time_connect = new Date();
 
+function getMapWidth() {
+    if (window.innerWidth <= 480) {
+        return window.innerWidth * 0.98; 
+    } else if (window.innerWidth <= 768) {
+        return window.innerWidth * 0.95; 
+    }
+    return window.innerWidth; 
+}
+
+function getMapHeight() {
+    if (window.innerWidth <= 480) {
+        return 150;
+    } else if (window.innerWidth <= 768) {
+        return 180; 
+    }
+    return window.innerHeight;
+}
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
 // Create a Konva Stage
 const stage = new Konva.Stage({
     container: 'map',
-    width: window.innerWidth,
-    height: window.innerHeight,
-    // position: {x: 776.1564000000002, y: 132.96359999999993},
-    // scale: {x: 0.5499159600000001, y: 0.5499159600000001}
-    position: { x: 909.0812167763638, y: 233.76107358727256 },
-    scale: { x: 0.8051319570360004, y: 0.8051319570360004 }
+    width: getMapWidth(),
+    height: getMapHeight(),
+    position: isMobile() ? { x: 300, y: 100 } : { x: 909.0812167763638, y: 233.76107358727256 }, 
+    scale: isMobile() ? { x: 0.15, y: 0.15 } : { x: 0.8051319570360004, y: 0.8051319570360004 },
+    draggable: !isMobile()
 });
+// const stage = new Konva.Stage({
+//     container: 'map',
+//     width: getMapWidth(),
+//     height: getMapHeight(),
+//     // position: {x: 776.1564000000002, y: 132.96359999999993},
+//     // scale: {x: 0.5499159600000001, y: 0.5499159600000001}
+//     position: { x: 909.0812167763638, y: 233.76107358727256 },
+//     scale: { x: 0.8051319570360004, y: 0.8051319570360004 }
+// });
 
 
 // Create a layer for grid and shapes
@@ -64,6 +93,8 @@ stage.add(robotLayer);
 
 // Enable zooming
 stage.on('wheel', (e) => {
+    if (isMobile()) return; // Skip zoom di mobile
+
     e.evt.preventDefault();
     const scaleBy = 1.1;
     const oldScale = stage.scaleX();
@@ -89,6 +120,7 @@ let isDragging = false;
 let dragStartPos = { x: 0, y: 0 };
 
 stage.on('mousedown', (e) => {
+    if (isMobile()) return;
     if (e.evt.button === 2) { // Check if the right mouse button is pressed
         isDragging = true;
         dragStartPos = stage.getPointerPosition();
@@ -101,7 +133,8 @@ stage.on('mousedown', (e) => {
 });
 
 stage.on('mousemove', (e) => {
-    if (!isDragging) return;
+    // if (!isDragging) return;
+    if (isMobile() || !isDragging) return; // Skip drag di mobile
 
     const pointer = stage.getPointerPosition();
     const dx = pointer.x - dragStartPos.x;
@@ -126,16 +159,39 @@ stage.on('contextmenu', (e) => {
 
 // Handle window resizing
 window.addEventListener('resize', () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = getMapWidth();
+    const height = getMapHeight();
+    const mobile = isMobile();
 
     stage.width(width);
     stage.height(height);
+    
+    // Reset position dan scale untuk mobile
+    if (mobile) {
+        stage.position({ x: 300, y: 100 });
+        stage.scale({ x: 0.15, y: 0.15 });
+        stage.draggable(false);
+    } else {
+        stage.position({ x: 909.0812167763638, y: 233.76107358727256 });
+        stage.scale({ x: 0.8051319570360004, y: 0.8051319570360004 });
+        stage.draggable(true);
+    }
 
     robotLayer.batchDraw();
-    // mapLayer.batchDraw();
-    // waypointsLayer.batchDraw();
+    waypointsLayer.batchDraw();
 });
+
+// window.addEventListener('resize', () => {
+//     const width = getMapWidth();
+//     const height = getMapHeight();
+
+//     stage.width(width);
+//     stage.height(height);
+
+//     robotLayer.batchDraw();
+//     // mapLayer.batchDraw();
+//     // waypointsLayer.batchDraw();
+// });
 
 // ================================================================================================================================
 function normalizeAngle(angle) {

@@ -3,6 +3,7 @@
 
 <head>
     <title>Web UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./bulma.min.css">
     <link rel="stylesheet" href="./index.css">
     <script src="./roslib.min.js"></script>
@@ -73,9 +74,8 @@
                     <path stroke="#3498db" stroke-width="10" fill="none"
                         d="M10,150 L100,150 L120,40 L140,150 L130,95 L110,95 L109,100 L135,100" fill="red"
                         class="bd-svg-black" />
-                    <!-- A -->
                     <path stroke="#3498db" stroke-width="10" fill="none" d="M140,150 L160,40 L180,150 L200,40 L400,40"
-                        fill="red" class="bd-svg-black" /> <!-- W -->
+                        fill="red" class="bd-svg-black" />
                 </svg>
             </a>
 
@@ -96,139 +96,126 @@
         <div id="time-display" class="date-text"></div>
     </div>
 
-    <!-- Battery Animation Widget -->
-    <div class="battery-container">
-        <div class="battery-info">
-            <div class="battery-percentage" id="battery-percentage">0%</div>
-            <div class="battery-status" id="battery-status">Disconnected</div>
+    <!-- ROW 1: WiFi1, LAP1, Battery1 -->
+    <div class="mobile-row-widgets">
+        <div class="wifi-container" id="wifi-container">
+            <div class="wifi-label">WiFi</div>
+            <div class="wifi-bars">
+                <div class="wifi-bar wifi-bar-1" id="wifi-bar-1"></div>
+                <div class="wifi-bar wifi-bar-2" id="wifi-bar-2"></div>
+                <div class="wifi-bar wifi-bar-3" id="wifi-bar-3"></div>
+                <div class="wifi-bar wifi-bar-4" id="wifi-bar-4"></div>
+            </div>
+            <div class="wifi-status" id="wifi-status">--ms</div>
         </div>
-        <div class="battery-icon" id="battery-icon">
-            <div class="battery-level" id="battery-level"></div>
-            <div class="battery-tip"></div>
-            <div class="charging-bolt" id="charging-bolt">⚡</div>
+
+        <div class="lap-container">
+            <div class="lap-label" id="label-lap">LAP T1</div>
+            <div class="lap-counter" id="counter-lap">00</div>
+        </div>
+
+        <div class="battery-container">
+            <div class="battery-info">
+                <div class="battery-percentage" id="battery-percentage">0%</div>
+                <div class="battery-status" id="battery-status">Disconnected</div>
+            </div>
+            <div class="battery-icon" id="battery-icon">
+                <div class="battery-level" id="battery-level"></div>
+                <div class="battery-tip"></div>
+                <div class="charging-bolt" id="charging-bolt">⚡</div>
+            </div>
         </div>
     </div>
 
-    <!-- LAP Counter Widget -->
-    <div class="lap-container">
-        <div class="lap-label" id="label-lap">LAP T1</div>
-        <div class="lap-counter" id="counter-lap">00</div>
-    </div>
-
-    <!-- WiFi Signal Widget -->
-    <div class="wifi-container" id="wifi-container">
-        <div class="wifi-label">WiFi</div>
-        <div class="wifi-bars">
-            <div class="wifi-bar wifi-bar-1" id="wifi-bar-1"></div>
-            <div class="wifi-bar wifi-bar-2" id="wifi-bar-2"></div>
-            <div class="wifi-bar wifi-bar-3" id="wifi-bar-3"></div>
-            <div class="wifi-bar wifi-bar-4" id="wifi-bar-4"></div>
-        </div>
-        <div class="wifi-status" id="wifi-status">--ms</div>
-    </div>
-
+    <!-- ROW 2: Camera 1 -->
     <img id="cam-main" class="cam-fixed" src="" caption="Camera 1" />
 
-    <!-- Battery Animation Widget -->
-    <div class="battery-container2">
-        <div class="battery-info2">
-            <div class="battery-percentage2" id="battery-percentage2">0%</div>
-            <div class="battery-status2" id="battery-status2">Disconnected</div>
+    <!-- ROW 3: Text 1 -->
+    <div class="container-textku">
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="towing-id" class="has-text-weight-bold is-size-4">
+                    Towing: Disconnected
+                </div>
+            </div>
+        </section>
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="status-emergency" class="has-text-weight-bold is-size-4">
+                    WARNING: Towing Disconnected
+                </div>
+            </div>
+        </section>
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="terminal-terakhir" class="has-text-weight-bold is-size-4">
+                    Terminal Terakhir:
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ROW 4: WiFi2, LAP2, Battery2 -->
+    <div class="mobile-row-widgets">
+        <div class="wifi-container2" id="wifi-container2">
+            <div class="wifi-label2">WiFi</div>
+            <div class="wifi-bars2">
+                <div class="wifi-bar2 wifi-bar-12" id="wifi-bar-12"></div>
+                <div class="wifi-bar2 wifi-bar-22" id="wifi-bar-22"></div>
+                <div class="wifi-bar2 wifi-bar-32" id="wifi-bar-32"></div>
+                <div class="wifi-bar2 wifi-bar-42" id="wifi-bar-42"></div>
+            </div>
+            <div class="wifi-status2" id="wifi-status2">--ms</div>
         </div>
-        <div class="battery-icon2" id="battery-icon2">
-            <div class="battery-level2" id="battery-level2"></div>
-            <div class="battery-tip2"></div>
-            <div class="charging-bolt2" id="charging-bolt2">⚡</div>
+
+        <div class="lap-container2">
+            <div class="lap-label2" id="label-lap2">LAP T2</div>
+            <div class="lap-counter2" id="counter-lap2">00</div>
+        </div>
+
+        <div class="battery-container2">
+            <div class="battery-info2">
+                <div class="battery-percentage2" id="battery-percentage2">0%</div>
+                <div class="battery-status2" id="battery-status2">Disconnected</div>
+            </div>
+            <div class="battery-icon2" id="battery-icon2">
+                <div class="battery-level2" id="battery-level2"></div>
+                <div class="battery-tip2"></div>
+                <div class="charging-bolt2" id="charging-bolt2">⚡</div>
+            </div>
         </div>
     </div>
 
-    <!-- LAP Counter Widget -->
-    <div class="lap-container2">
-        <div class="lap-label2" id="label-lap2">LAP T2</div>
-        <div class="lap-counter2" id="counter-lap2">00</div>
-    </div>
-
-    <!-- WiFi Signal Widget -->
-    <div class="wifi-container2" id="wifi-container2">
-        <div class="wifi-label2">WiFi</div>
-        <div class="wifi-bars2">
-            <div class="wifi-bar2 wifi-bar-12" id="wifi-bar-12"></div>
-            <div class="wifi-bar2 wifi-bar-22" id="wifi-bar-22"></div>
-            <div class="wifi-bar2 wifi-bar-32" id="wifi-bar-32"></div>
-            <div class="wifi-bar2 wifi-bar-42" id="wifi-bar-42"></div>
-        </div>
-        <div class="wifi-status2" id="wifi-status2">--ms</div>
-    </div>
-
-    <!-- Camera Feed -->
+    <!-- ROW 5: Camera 2 -->
     <img id="cam-main2" class="cam-fixed2" src="" caption="Camera 2" />
 
-    <br>
-    <!-- 
-    <div class="cam-label">
-        <div class="has-text-weight-bold is-size-4">
-            T1
-        </div>
+    <!-- ROW 6: Text 2 -->
+    <div class="container-textku2">
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="towing-id2" class="has-text-weight-bold is-size-4">
+                    Towing: Disconnected
+                </div>
+            </div>
+        </section>
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="status-emergency2" class="has-text-weight-bold is-size-4">
+                    WARNING: Towing Disconnected
+                </div>
+            </div>
+        </section>
+        <section class="section is-flex is-justify-content-center is-align-items-center p-0">
+            <div class="center-wrap has-text-centered">
+                <div id="terminal-terakhir2" class="has-text-weight-bold is-size-4">
+                    Terminal Terakhir:
+                </div>
+            </div>
+        </section>
     </div>
 
-    <div class="cam-label2">
-        <div class="has-text-weight-bold is-size-4">
-            T2
-        </div>
-    </div> -->
-
+    <!-- ROW 7: Map -->
     <div class="container is-fluid">
-        <div class="container-textku">
-            <!-- Kata Kata -->
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="towing-id" class="has-text-weight-bold is-size-4">
-                        Towing: Disconnected
-                    </div>
-                </div>
-            </section>
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="status-emergency" class="has-text-weight-bold is-size-4">
-                        WARNING: Towing Disconnected
-                    </div>
-                </div>
-            </section>
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="terminal-terakhir" class="has-text-weight-bold is-size-4">
-                        Terminal Terakhir:
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="container-textku2">
-            <!-- Kata Kata -->
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="towing-id2" class="has-text-weight-bold is-size-4">
-                        Towing: Disconnected
-                    </div>
-                </div>
-            </section>
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="status-emergency2" class="has-text-weight-bold is-size-4">
-                        WARNING: Towing Disconnected
-                    </div>
-                </div>
-            </section>
-            <section class="section is-flex is-justify-content-center is-align-items-center p-0">
-                <div class="center-wrap has-text-centered">
-                    <div id="terminal-terakhir2" class="has-text-weight-bold is-size-4">
-                        Terminal Terakhir:
-                    </div>
-                </div>
-            </section>
-        </div>
-
-
         <div id="map"></div>
     </div>
 
